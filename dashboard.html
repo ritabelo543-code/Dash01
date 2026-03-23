@@ -8,8 +8,6 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
-
 <style>
 :root {
   --bg: #EFF3F8;
@@ -225,7 +223,7 @@ body {
 /* ── KPI GRID ─────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr); /* Ajustado para 4 colunas */
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -378,7 +376,7 @@ body {
 
 /* ── RESPONSIVE ──────────────────────────────────────────── */
 @media (max-width: 1280px) {
-  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .row-gauge-trend { grid-template-columns: 1fr; }
   .row-2col { grid-template-columns: 1fr; }
 }
@@ -511,14 +509,6 @@ body {
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-accent accent-amber"></div>
-        <div class="kpi-icon icon-amber">⏱</div>
-        <div class="kpi-lbl">SLA Médio de Auditoria</div>
-        <div class="kpi-val" id="kSla">—</div>
-        <div class="kpi-chip chip-amber">dias (calibração → auditoria)</div>
-      </div>
-
-      <div class="kpi-card">
         <div class="kpi-accent accent-purple"></div>
         <div class="kpi-icon icon-purple">🏆</div>
         <div class="kpi-lbl">Auditor Destaque</div>
@@ -608,9 +598,6 @@ body {
   </div>
 
 </div><script>
-/* 2. REGISTRO GLOBAL DO PLUGIN PARA FUNCIONAR NO CHART.JS 4.x */
-Chart.register(ChartDataLabels);
-
 /* ═══════════════════════════════════════════════════════════
    CONFIGURAÇÃO — URLs das abas do Google Sheets (CSV)
    ═══════════════════════════════════════════════════════════ */
@@ -666,7 +653,7 @@ const COL = {
   chassi:     ['chassi','chassis'],
   auditor:    ['auditor'],
   correta:    ['auditoriaestacorreta','auditoriaestacoreta','estacorreta','correta','auditoriaestaokay','auditoriaestaok'],
-  obs:         ['observacao','observacoes','obs','observacao1'],
+  obs:        ['observacao','observacoes','obs','observacao1'],
 };
 
 function findCol(hmap, key) {
@@ -854,6 +841,9 @@ function resetFilters() {
   if (dates.length) {
     document.getElementById('fDateS').value = dates[0];
     document.getElementById('fDateE').value = dates[dates.length-1];
+  } else {
+    document.getElementById('fDateS').value = '';
+    document.getElementById('fDateE').value = '';
   }
   const checks = document.querySelectorAll('#msDD input[type=checkbox]');
   checks.forEach(c => c.checked = true);
@@ -891,6 +881,7 @@ function renderKPIs() {
   const pct   = total > 0 ? sim / total * 100 : 0;
 
   document.getElementById('kTotal').textContent = total.toLocaleString('pt-BR');
+
   document.getElementById('kQual').textContent = pct.toFixed(1) + '%';
   const above = pct >= 95;
   document.getElementById('kQualAccent').className = 'kpi-accent ' + (above ? 'accent-green' : 'accent-red');
@@ -899,10 +890,8 @@ function renderKPIs() {
   const chip = document.getElementById('kQualChip');
   chip.className = 'kpi-chip ' + (above ? 'chip-green' : 'chip-red');
   chip.textContent = above ? '✓ Acima da meta (95%)' : `▼ ${(95-pct).toFixed(1)}% abaixo da meta`;
+
   document.getElementById('kNao').textContent = nao.toLocaleString('pt-BR');
-  const slas = filteredRows.map(r => r.sla).filter(v => v !== null && v >= 0);
-  const slaAvg = slas.length > 0 ? (slas.reduce((a,b)=>a+b,0)/slas.length).toFixed(1) : '—';
-  document.getElementById('kSla').textContent = slaAvg;
 
   const aMap = {};
   filteredRows.forEach(r => { if (r.auditor) aMap[r.auditor] = (aMap[r.auditor]||0)+1; });
@@ -915,138 +904,6 @@ function renderKPIs() {
     document.getElementById('kAudChip').textContent = '—';
   }
 }
-
-/* ═══════════════════════════════════════════════════════════
-   CHARTS — helpers
-   ═══════════════════════════════════════════════════════════ */
-const C = {
-  sim:   '#059669',
-  simBg: 'rgba(5,150,105,0.82)',
-  nao:   '#DC2626',
-  naoBg: 'rgba(220,38,38,0.82)',
-  blue:  '#0369A1',
-  blueBg:'rgba(3,105,161,0.85)',
-  txt:   '#0F172A',
-  muted: '#64748B',
-  grid:  '#F1F5F9',
-  white: '#FFFFFF'
-};
-const FONT = { family: "'DM Sans', sans-serif", size: 11, weight: 500 };
-
-/* FUNÇÃO CENTRAL DE RENDERIZAÇÃO DE GRÁFICOS */
-function renderCharts() {
-  const FONT_DL = { family: FONT.family, size: 10, weight: 700 };
-
-  /* 1. GAUGE */
-  const pct = filteredRows.length > 0 ? (filteredRows.filter(r=>r.correto).length / filteredRows.length * 100) : 0;
-  document.getElementById('gaugePct').textContent = pct.toFixed(1) + '%';
-  document.getElementById('gaugePct').style.color = pct >= 95 ? C.sim : C.nao;
-  document.getElementById('gaugeBadge').textContent = pct >= 95 ? 'ALTA PERFORMANCE' : 'ATENÇÃO';
-  document.getElementById('gaugeBadge').style.background = pct >= 95 ? '#D1FAE5' : '#FEE2E2';
-  document.getElementById('gaugeBadge').style.color = pct >= 95 ? C.sim : C.nao;
-
-  if(charts.gauge) charts.gauge.destroy();
-  charts.gauge = new Chart('gaugeChart', {
-    type: 'doughnut',
-    data: {
-      datasets: [{
-        data: [pct, 100-pct],
-        backgroundColor: [pct >= 95 ? C.sim : C.nao, '#F1F5F9'],
-        borderWidth: 0, cutout: '82%', circumference: 180, rotation: 270
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false }, tooltip: { enabled: false } } }
-  });
-
-  /* 2. TENDÊNCIA */
-  const tMap = {};
-  filteredRows.forEach(r => { if(r.isoAud) { if(!tMap[r.isoAud]) tMap[r.isoAud]={s:0,t:0}; if(r.correto) tMap[r.isoAud].s++; tMap[r.isoAud].t++; }});
-  const tLabels = Object.keys(tMap).sort();
-  const tData = tLabels.map(l => (tMap[l].s/tMap[l].t*100).toFixed(1));
-
-  if(charts.trend) charts.trend.destroy();
-  charts.trend = new Chart('trendChart', {
-    type: 'line',
-    data: {
-      labels: tLabels.map(l => l.split('-').reverse().slice(0,2).join('/')),
-      datasets: [{
-        label: '% Qualidade', data: tData, borderColor: C.blue, backgroundColor: 'rgba(14,165,233,0.1)',
-        fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#fff', borderWidth: 3,
-        datalabels: { display: true, align: 'top', color: C.blue, font: FONT_DL, formatter: v => v+'%' }
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } },
-    plugins: [ChartDataLabels]
-  });
-
-  /* 3. PROJETOS */
-  const pMap = {};
-  filteredRows.forEach(r => { if(!pMap[r.projeto]) pMap[r.projeto]={s:0,n:0}; r.correto?pMap[r.projeto].s++:pMap[r.projeto].n++; });
-  const pLabels = Object.keys(pMap).sort();
-
-  if(charts.project) charts.project.destroy();
-  charts.project = new Chart('projectChart', {
-    type: 'bar',
-    data: {
-      labels: pLabels,
-      datasets: [
-        { label: 'Sim', data: pLabels.map(l=>pMap[l].s), backgroundColor: C.simBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } },
-        { label: 'Não', data: pLabels.map(l=>pMap[l].n), backgroundColor: C.naoBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } }
-      ]
-    },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } },
-    plugins: [ChartDataLabels]
-  });
-
-  /* 4. PARETO */
-  const eMap = {};
-  filteredRows.filter(r=>!r.correto && r.obs).forEach(r => { const words = r.obs.split(/[,;.\s]+/).filter(w=>w.length>3); words.forEach(w=>{ const k=w.toUpperCase(); eMap[k]=(eMap[k]||0)+1; })});
-  const eSorted = Object.entries(eMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-
-  if(charts.pareto) charts.pareto.destroy();
-  charts.pareto = new Chart('paretoChart', {
-    type: 'bar',
-    data: {
-      labels: eSorted.map(s=>s[0]),
-      datasets: [{ label: 'Ocorrências', data: eSorted.map(s=>s[1]), backgroundColor: '#1E293B', borderRadius: 4, datalabels: { display: true, align: 'end', anchor: 'end', color: '#1E293B', font: FONT_DL } }]
-    },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false },
-    plugins: [ChartDataLabels]
-  });
-
-  /* 5. AUDITOR */
-  const aMap = {};
-  filteredRows.forEach(r => { if(r.auditor){ if(!aMap[r.auditor]) aMap[r.auditor]={s:0,n:0}; r.correto?aMap[r.auditor].s++:aMap[r.auditor].n++; }});
-  const aLabels = Object.keys(aMap).sort((a,b)=>(aMap[b].s+aMap[b].n)-(aMap[a].s+aMap[a].n));
-
-  if(charts.auditor) charts.auditor.destroy();
-  charts.auditor = new Chart('auditorChart', {
-    type: 'bar',
-    data: {
-      labels: aLabels,
-      datasets: [
-        { label: 'Sim', data: aLabels.map(l=>aMap[l].s), backgroundColor: C.simBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } },
-        { label: 'Não', data: aLabels.map(l=>aMap[l].n), backgroundColor: C.naoBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } },
-    plugins: [ChartDataLabels]
-  });
-}
-
-function exportCSV() {
-  const head = ['Projeto','Data','Chassi','Auditor','Status','Obs'];
-  const body = filteredRows.map(r => [r.projeto, fmtDate(r.dataAud), r.chassi, r.auditor, r.correto?'Sim':'Não', r.obs]);
-  const content = [head, ...body].map(r => r.join(',')).join('\n');
-  const blob = new Blob([content], {type: 'text/csv'});
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.setAttribute('href', url);
-  a.setAttribute('download', 'relatorio_qa.csv');
-  a.click();
-}
-
-loadAllData();
 </script>
 </body>
 </html>
