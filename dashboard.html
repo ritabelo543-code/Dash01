@@ -9,218 +9,1044 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+
 <style>
 :root {
-  --bg:#EFF3F8;--card:#FFFFFF;--border:#E2E8F0;
-  --navy:#0C2340;--navy-mid:#163556;--navy-light:#1E4473;
-  --accent:#0369A1;--accent-bright:#0EA5E9;
-  --sim:#10B981;--nao:#EF4444;--txt:#1E293B;--txt-light:#64748B;
-  --grid:#F1F5F9;
+  --bg: #EFF3F8;
+  --card: #FFFFFF;
+  --border: #E2E8F0;
+  --navy: #0C2340;
+  --navy-mid: #163556;
+  --navy-light: #1E4473;
+  --accent: #0369A1;
+  --accent-bright: #0EA5E9;
+  --accent-light: #E0F2FE;
+  --success: #047857;
+  --success-mid: #059669;
+  --success-light: #D1FAE5;
+  --danger: #B91C1C;
+  --danger-mid: #DC2626;
+  --danger-light: #FEE2E2;
+  --warning: #B45309;
+  --warning-mid: #D97706;
+  --warning-light: #FEF3C7;
+  --purple: #6D28D9;
+  --purple-light: #EDE9FE;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-faint: #94A3B8;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-xs: 6px;
 }
-* { margin:0; padding:0; box-sizing:border-box; outline:none; }
-body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt); padding:20px; line-height:1.5; }
-.dash { max-width:1400px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
-header { display:flex; justify-content:space-between; align-items:center; background:var(--navy); padding:20px 30px; border-radius:16px; color:white; box-shadow:0 4px 20px rgba(0,0,0,0.1); }
-header h1 { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; letter-spacing:-0.5px; }
-.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; }
-.kpi { background:var(--card); padding:20px; border-radius:16px; border:1px solid var(--border); display:flex; flex-direction:column; gap:8px; transition:0.2s; }
-.kpi span { font-size:13px; color:var(--txt-light); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
-.kpi strong { font-size:28px; color:var(--navy); font-weight:700; }
-.charts { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
-.chart-card { background:var(--card); padding:25px; border-radius:16px; border:1px solid var(--border); min-height:350px; display:flex; flex-direction:column; }
-.chart-card.full { grid-column: span 2; }
-.chart-card h3 { font-size:16px; margin-bottom:20px; color:var(--navy); font-weight:700; display:flex; align-items:center; gap:10px; }
-canvas { width:100% !important; height:100% !important; }
-.btn-export { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:white; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; transition:0.2s; }
-.btn-export:hover { background:var(--accent); border-color:var(--accent); }
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ─────────────────────────────────────────────── */
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, var(--navy-light) 100%);
+  padding: 0 32px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-lg);
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+.header-left { display: flex; align-items: center; gap: 14px; }
+
+.header-logo {
+  width: 40px; height: 40px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.header-brand {}
+.header-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px; font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.2px;
+  line-height: 1;
+}
+.header-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 3px;
+  letter-spacing: 0.2px;
+}
+
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.ts-block { text-align: right; margin-right: 4px; }
+.ts-label { font-size: 10px; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: 0.7px; }
+.ts-value { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.72); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px; font-weight: 600;
+  cursor: pointer; border: none;
+  transition: all 0.18s;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.btn-ghost {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.88);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.18); }
+.btn-export {
+  background: var(--success-mid);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(5,150,105,0.35);
+}
+.btn-export:hover { background: var(--success); }
+
+/* ── MAIN ────────────────────────────────────────────────── */
+.main {
+  padding: 22px 28px 32px;
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+/* ── FILTERS ─────────────────────────────────────────────── */
+.filters-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow-xs);
+}
+
+.fg { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
+.fg-label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  color: var(--text-muted);
+}
+.fi {
+  height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 13px; font-family: 'DM Sans', sans-serif;
+  color: var(--text-primary);
+  background: #F8FAFC;
+  outline: none;
+  transition: border-color 0.18s, background 0.18s;
+}
+.fi:focus { border-color: var(--accent-bright); background: #fff; }
+
+.fdiv { width: 1px; height: 34px; background: var(--border); flex-shrink: 0; align-self: flex-end; }
+
+/* Multi-select */
+.ms-wrap { position: relative; flex: 1; min-width: 130px; }
+.ms-display {
+  height: 36px; padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 13px; font-family: 'DM Sans', sans-serif;
+  color: var(--text-primary);
+  background: #F8FAFC;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: border-color 0.18s, background 0.18s;
+  user-select: none;
+}
+.ms-display:hover, .ms-display.open { border-color: var(--accent-bright); background: #fff; }
+.ms-arrow { color: var(--text-muted); font-size: 10px; transition: transform 0.18s; }
+.ms-display.open .ms-arrow { transform: rotate(180deg); }
+
+.ms-dd {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  display: none; overflow: hidden;
+}
+.ms-dd.open { display: block; }
+.ms-opt {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; cursor: pointer; font-size: 13px;
+  transition: background 0.12s;
+}
+.ms-opt:hover { background: var(--accent-light); }
+.ms-opt input[type=checkbox] { accent-color: var(--accent-bright); width: 14px; height: 14px; flex-shrink: 0; }
+
+.btn-reset {
+  height: 36px; padding: 0 14px;
+  background: #F1F5F9; color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 12.5px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all 0.18s; white-space: nowrap;
+}
+.btn-reset:hover { background: #E2E8F0; }
+
+/* ── KPI GRID ─────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s;
+  cursor: default;
+}
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+.kpi-accent {
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.accent-blue { background: linear-gradient(90deg, var(--accent), var(--accent-bright)); }
+.accent-green { background: linear-gradient(90deg, var(--success), var(--success-mid)); }
+.accent-red { background: linear-gradient(90deg, var(--danger), var(--danger-mid)); }
+.accent-amber { background: linear-gradient(90deg, var(--warning), var(--warning-mid)); }
+.accent-purple { background: linear-gradient(90deg, var(--purple), #8B5CF6); }
+
+.kpi-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  margin-bottom: 11px;
+}
+.icon-blue { background: var(--accent-light); }
+.icon-green { background: var(--success-light); }
+.icon-red { background: var(--danger-light); }
+.icon-amber { background: var(--warning-light); }
+.icon-purple { background: var(--purple-light); }
+
+.kpi-lbl {
+  font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.7px;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+.kpi-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 30px; font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 7px;
+}
+.kpi-val.sm { font-size: 20px; }
+
+.kpi-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.chip-blue { background: var(--accent-light); color: var(--accent); }
+.chip-green { background: var(--success-light); color: var(--success); }
+.chip-red { background: var(--danger-light); color: var(--danger); }
+.chip-amber { background: var(--warning-light); color: var(--warning); }
+
+/* ── CHART CARDS ─────────────────────────────────────────── */
+.row { display: grid; gap: 14px; margin-bottom: 14px; }
+.row-gauge-trend { grid-template-columns: 320px 1fr; }
+.row-2col { grid-template-columns: 1fr 1fr; }
+.row-1col { grid-template-columns: 1fr; }
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 20px 16px;
+  box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column;
+}
+
+.ch-head {
+  display: flex; align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px; gap: 8px;
+}
+.ch-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+.ch-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.ch-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 700;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── GAUGE ───────────────────────────────────────────────── */
+.gauge-wrap {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; min-height: 210px;
+}
+.gauge-canvas-wrap { position: relative; width: 100%; max-width: 280px; }
+.gauge-overlay {
+  position: absolute;
+  bottom: 10px; left: 50%; transform: translateX(-50%);
+  text-align: center; pointer-events: none; width: 100%;
+}
+.gauge-pct {
+  font-family: 'Syne', sans-serif;
+  font-size: 38px; font-weight: 800;
+  line-height: 1;
+}
+.gauge-meta-lbl {
+  font-size: 11px; color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.gauge-ticks {
+  display: flex; justify-content: space-between;
+  padding: 0 8px; width: 100%; max-width: 280px;
+  margin-top: -4px;
+}
+.gauge-tick { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+
+/* ── STATES ─────────────────────────────────────────────── */
+.state-wrap {
+  min-height: 70vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+}
+.spinner {
+  width: 46px; height: 46px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent-bright);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.state-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
+.state-desc { font-size: 13.5px; color: var(--text-muted); text-align: center; max-width: 420px; line-height: 1.6; }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 1280px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .row-gauge-trend { grid-template-columns: 1fr; }
+  .row-2col { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .main { padding: 14px 14px 24px; }
+  .header { padding: 0 16px; height: 60px; flex-wrap: wrap; gap: 8px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .ts-block { display: none; }
+}
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .header-right .btn-export { display: none; }
+}
+
+/* chart max-heights */
+#gaugeChart { max-height: 220px; }
+#trendChart { max-height: 265px; }
+#projectChart { max-height: 290px; }
+#paretoChart { max-height: 290px; }
+#auditorChart { max-height: 240px; }
 </style>
 </head>
 <body>
-<div class="dash">
-  <header><h1>QA Intelligence Dashboard</h1><button class="btn-export" onclick="exportCSV()">Exportar Dados</button></header>
-  <div class="kpis" id="kpis"></div>
-  <div class="charts">
-    <div class="chart-card full"><h3 id="title-trend">Tendência de Qualidade</h3><canvas id="chart-trend"></canvas></div>
-    <div class="chart-card"><h3>Top 10 Inconsistências</h3><canvas id="chart-pareto"></canvas></div>
-    <div class="chart-card"><h3>Volume por Projeto</h3><canvas id="chart-project"></canvas></div>
-    <div class="chart-card full"><h3>Performance por Auditor</h3><canvas id="chart-auditor"></canvas></div>
-  </div>
+
+<div id="stateLoading" class="state-wrap">
+  <div class="spinner"></div>
+  <p class="state-title">Carregando dados...</p>
+  <p class="state-desc">Buscando e consolidando todas as abas da planilha. Aguarde um momento.</p>
 </div>
 
-<script>
-// REGISTRO DO PLUGIN (Necessário para que os rótulos apareçam)
+<div id="stateError" class="state-wrap" style="display:none">
+  <div style="font-size:52px">⚠️</div>
+  <p class="state-title" id="errTitle">Falha ao carregar</p>
+  <p class="state-desc" id="errDesc">Verifique os links CSV e as permissões de publicação da planilha.</p>
+  <button class="btn btn-ghost" style="background:var(--accent);color:#fff;margin-top:8px" onclick="loadAllData()">↺ Tentar novamente</button>
+</div>
+
+<div id="dashboard" style="display:none">
+
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">📊</div>
+      <div class="header-brand">
+        <div class="header-title">QA Intelligence</div>
+        <div class="header-sub">Painel de Indicadores de Qualidade · Tempo Real</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="ts-block">
+        <div class="ts-label">Última atualização</div>
+        <div class="ts-value" id="tsEl">—</div>
+      </div>
+      <button class="btn btn-ghost" onclick="loadAllData()">
+        <span id="refreshIco">↺</span> Atualizar
+      </button>
+      <button class="btn btn-export" onclick="exportCSV()">
+        ⬇ Exportar CSV
+      </button>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <div class="filters-wrap">
+      <div class="fg" style="max-width:190px">
+        <span class="fg-label">🔍 Busca por Chassi</span>
+        <input type="text" id="fChassi" class="fi" placeholder="Ex: 9BGKS48U..." oninput="applyFilters()">
+      </div>
+
+      <div class="fdiv"></div>
+
+      <div class="fg" style="max-width:148px">
+        <span class="fg-label">📅 Data início</span>
+        <input type="date" id="fDateS" class="fi" onchange="applyFilters()">
+      </div>
+      <div class="fg" style="max-width:148px">
+        <span class="fg-label">📅 Data fim</span>
+        <input type="date" id="fDateE" class="fi" onchange="applyFilters()">
+      </div>
+
+      <div class="fdiv"></div>
+
+      <div class="fg" style="max-width:160px">
+        <span class="fg-label">🏭 Projeto</span>
+        <div class="ms-wrap">
+          <div class="ms-display" id="msDisplay" onclick="toggleMS()">
+            <span id="msText">Todos</span>
+            <span class="ms-arrow">▾</span>
+          </div>
+          <div class="ms-dd" id="msDD"></div>
+        </div>
+      </div>
+
+      <div class="fg" style="max-width:175px">
+        <span class="fg-label">👤 Auditor</span>
+        <select id="fAuditor" class="fi" onchange="applyFilters()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="fdiv"></div>
+
+      <button class="btn-reset" onclick="resetFilters()">✕ Limpar filtros</button>
+    </div>
+
+    <div class="kpi-grid">
+
+      <div class="kpi-card">
+        <div class="kpi-accent accent-blue"></div>
+        <div class="kpi-icon icon-blue">📋</div>
+        <div class="kpi-lbl">Volume Total Avaliado</div>
+        <div class="kpi-val" id="kTotal">—</div>
+        <div class="kpi-chip chip-blue">registros auditados</div>
+      </div>
+
+      <div class="kpi-card" id="kQualCard">
+        <div class="kpi-accent" id="kQualAccent"></div>
+        <div class="kpi-icon" id="kQualIcon">✅</div>
+        <div class="kpi-lbl">% Qualidade Geral</div>
+        <div class="kpi-val" id="kQual">—</div>
+        <div class="kpi-chip" id="kQualChip">—</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-accent accent-red"></div>
+        <div class="kpi-icon icon-red">❌</div>
+        <div class="kpi-lbl">Índice de Inconsistência</div>
+        <div class="kpi-val" id="kNao">—</div>
+        <div class="kpi-chip chip-red">não conformes</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-accent accent-amber"></div>
+        <div class="kpi-icon icon-amber">⏱</div>
+        <div class="kpi-lbl">SLA Médio de Auditoria</div>
+        <div class="kpi-val" id="kSla">—</div>
+        <div class="kpi-chip chip-amber">dias (calibração → auditoria)</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-accent accent-purple"></div>
+        <div class="kpi-icon icon-purple">🏆</div>
+        <div class="kpi-lbl">Auditor Destaque</div>
+        <div class="kpi-val sm" id="kAud">—</div>
+        <div class="kpi-chip chip-blue" id="kAudChip">—</div>
+      </div>
+
+    </div>
+
+    <div class="row row-gauge-trend">
+
+      <div class="chart-card">
+        <div class="ch-head">
+          <div>
+            <div class="ch-title">Indicador de Qualidade</div>
+            <div class="ch-sub">Velocímetro vs Meta ≥ 95%</div>
+          </div>
+          <div class="ch-badge" id="gaugeBadge" style="background:#EDE9FE;color:#6D28D9">—</div>
+        </div>
+        <div class="gauge-wrap">
+          <div class="gauge-canvas-wrap">
+            <canvas id="gaugeChart"></canvas>
+            <div class="gauge-overlay">
+              <div class="gauge-pct" id="gaugePct">—</div>
+              <div class="gauge-meta-lbl">Meta: 95%</div>
+            </div>
+          </div>
+          <div class="gauge-ticks">
+            <span class="gauge-tick">0%</span>
+            <span class="gauge-tick">50%</span>
+            <span class="gauge-tick">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="ch-head">
+          <div>
+            <div class="ch-title">Evolução Temporal da Qualidade</div>
+            <div class="ch-sub">% Qualidade diária vs linha de meta (95%)</div>
+          </div>
+          <div class="ch-badge" id="trendBadge" style="background:var(--accent-light);color:var(--accent)">—</div>
+        </div>
+        <canvas id="trendChart"></canvas>
+      </div>
+
+    </div>
+
+    <div class="row row-2col">
+
+      <div class="chart-card">
+        <div class="ch-head">
+          <div>
+            <div class="ch-title">Status por Projeto</div>
+            <div class="ch-sub">Conformes vs Não Conformes por montadora</div>
+          </div>
+        </div>
+        <canvas id="projectChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="ch-head">
+          <div>
+            <div class="ch-title">Pareto de Erros — Top Motivos</div>
+            <div class="ch-sub">Termos mais frequentes nas ocorrências registradas</div>
+          </div>
+        </div>
+        <canvas id="paretoChart"></canvas>
+      </div>
+
+    </div>
+
+    <div class="row row-1col">
+      <div class="chart-card">
+        <div class="ch-head">
+          <div>
+            <div class="ch-title">Volume por Auditor</div>
+            <div class="ch-sub">Produtividade e conformidade individual da equipe</div>
+          </div>
+        </div>
+        <canvas id="auditorChart"></canvas>
+      </div>
+    </div>
+
+  </div><div class="footer">
+    QA Intelligence Dashboard &nbsp;·&nbsp; Dados em tempo real via Google Sheets &nbsp;·&nbsp; v2.0
+  </div>
+
+</div><script>
+/* 2. REGISTRO GLOBAL DO PLUGIN PARA FUNCIONAR NO CHART.JS 4.x */
 Chart.register(ChartDataLabels);
 
-const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vS-1_zXfM7vF3qQdKx5_8Ew7e8hGf6_r8w_p9t/pub?output=csv';
-const C={navy:'#0C2340',blue:'#0369A1',sim:'#10B981',nao:'#EF4444',txt:'#1E293B',grid:'#F1F5F9',white:'#FFFFFF'};
-const FONT={family:'DM Sans',size:11,weight:'500'};
+/* ═══════════════════════════════════════════════════════════
+   CONFIGURAÇÃO — URLs das abas do Google Sheets (CSV)
+   ═══════════════════════════════════════════════════════════ */
+const CSV_URLS = [
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08WRcxagknb0ucDbTkvUyUW7hjqR2uAyHtaSqyZpIJIq8ejzTL-1F2ZC0M4spg8XUQIxBqNz38s_/pub?gid=352996843&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08WRcxagknb0ucDbTkvUyUW7hjqR2uAyHtaSqyZpIJIq8ejzTL-1F2ZC0M4spg8XUQIxBqNz38s_/pub?gid=1439413758&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08WRcxagknb0ucDbTkvUyUW7hjqR2uAyHtaSqyZpIJIq8ejzTL-1F2ZC0M4spg8XUQIxBqNz38s_/pub?gid=1819995490&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08WRcxagknb0ucDbTkvUyUW7hjqR2uAyHtaSqyZpIJIq8ejzTL-1F2ZC0M4spg8XUQIxBqNz38s_/pub?gid=2022041798&single=true&output=csv',
+];
 
-let rawData=[],filteredRows=[],charts={};
+/* ═══════════════════════════════════════════════════════════
+   UTILITÁRIOS
+   ═══════════════════════════════════════════════════════════ */
+function normKey(s) {
+  return String(s).toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]/g,'');
+}
 
-/* AUXILIARES DE RÓTULOS (Mantendo sua lógica original) */
-const dlV=(ds,color,bg)=>({
-  display:true,
-  anchor:'end',
-  align:'top',
-  color:bg,
-  font:{family:'DM Sans',size:10,weight:'700'},
-  offset:4,
-  formatter:v=>v
-});
+function parseDate(s) {
+  if (!s) return null;
+  s = s.trim();
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  return null;
+}
 
-const dlH=(ds,color,bg)=>({
-  display:true,
-  anchor:'end',
-  align:'right',
-  color:bg,
-  font:{family:'DM Sans',size:10,weight:'700'},
-  offset:4,
-  formatter:v=>v
-});
+function toISO(d) {
+  if (!d) return '';
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
-async function init(){
-  Papa.parse(CSV_URL,{
-    download:true,header:true,skipEmptyLines:true,
-    complete:res=>{
-      rawData=res.data.map(r=>({
-        projeto:r['Projeto'],
-        dataAud:new Date(r['Data Auditoria']),
-        chassi:r['Chassi'],
-        auditor:r['Auditor'],
-        correto:String(r['Auditoria Correta?']).trim().toLowerCase()==='sim',
-        obs:r['Observação']||''
-      })).filter(r=>!isNaN(r.dataAud));
-      update();
+function fmtDate(d) {
+  if (!d) return '—';
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function daysDiff(a, b) {
+  if (!a || !b) return null;
+  const diff = Math.round((b - a) / 86400000);
+  return diff;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAPEAMENTO DE COLUNAS (com aliases)
+   ═══════════════════════════════════════════════════════════ */
+const COL = {
+  projeto:    ['projeto'],
+  dataCal:    ['datacalibracao','datadacalibracao','calibracao','dtcalibracao','dtcal'],
+  dataAud:    ['dataauditoria','datadaauditoria','dtauditoria','dtaud'],
+  chassi:     ['chassi','chassis'],
+  auditor:    ['auditor'],
+  correta:    ['auditoriaestacorreta','auditoriaestacoreta','estacorreta','correta','auditoriaestaokay','auditoriaestaok'],
+  obs:         ['observacao','observacoes','obs','observacao1'],
+};
+
+function findCol(hmap, key) {
+  for (const alias of (COL[key]||[key])) {
+    if (hmap[alias] !== undefined) return hmap[alias];
+  }
+  for (const alias of (COL[key]||[key])) {
+    const found = Object.keys(hmap).find(h => h.includes(alias) || alias.includes(h));
+    if (found !== undefined) return hmap[found];
+  }
+  return undefined;
+}
+
+function buildHmap(headers) {
+  const m = {};
+  headers.forEach((h,i) => { m[normKey(h)] = i; });
+  return m;
+}
+
+function getCell(raw, hmap, key) {
+  const idx = findCol(hmap, key);
+  return idx !== undefined ? String(raw[idx]||'').trim() : '';
+}
+
+function normCorreta(s) {
+  const n = s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (n.startsWith('sim') || n === 's') return 'sim';
+  if (n.startsWith('nao') || n.startsWith('nã') || n === 'n' || n === 'nao') return 'nao';
+  return null;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DATA LAYER
+   ═══════════════════════════════════════════════════════════ */
+let allRows = [];
+let filteredRows = [];
+let charts = {};
+let selectedProjects = new Set();
+
+function normalizeRow(raw, hmap) {
+  const corr = normCorreta(getCell(raw, hmap, 'correta'));
+  if (!corr) return null;
+  const projeto = getCell(raw, hmap, 'projeto');
+  if (!projeto) return null;
+  const dataCal = parseDate(getCell(raw, hmap, 'dataCal'));
+  const dataAud = parseDate(getCell(raw, hmap, 'dataAud'));
+  const chassi  = getCell(raw, hmap, 'chassi');
+  const auditor = getCell(raw, hmap, 'auditor');
+  const obs     = getCell(raw, hmap, 'obs');
+  return {
+    projeto,
+    dataCal,
+    dataAud,
+    chassi,
+    auditor,
+    correto: corr === 'sim',
+    obs,
+    sla: daysDiff(dataCal, dataAud),
+    isoAud: dataAud ? toISO(dataAud) : '',
+  };
+}
+
+async function fetchOne(url) {
+  const r = await fetch(url + '&_ts=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.text();
+}
+
+function parseText(text) {
+  const firstLine = text.split('\n')[0];
+  const delim = (firstLine.match(/;/g)||[]).length > (firstLine.match(/,/g)||[]).length ? ';' : ',';
+  return Papa.parse(text, { delimiter: delim, skipEmptyLines: true, header: false }).data;
+}
+
+async function loadAllData() {
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('stateError').style.display = 'none';
+  document.getElementById('stateLoading').style.display = 'flex';
+
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+  allRows = [];
+
+  const erros = [];
+  for (const url of CSV_URLS) {
+    try {
+      const text = await fetchOne(url);
+      const data = parseText(text);
+      if (data.length < 2) { erros.push('Aba vazia'); continue; }
+      const hmap = buildHmap(data[0]);
+      for (let i = 1; i < data.length; i++) {
+        const row = normalizeRow(data[i], hmap);
+        if (row) allRows.push(row);
+      }
+    } catch(e) {
+      erros.push(e.message);
+      console.warn('Erro ao carregar aba:', e);
     }
-  });
+  }
+
+  if (allRows.length === 0) {
+    document.getElementById('stateLoading').style.display = 'none';
+    document.getElementById('errTitle').textContent = 'Nenhum dado encontrado';
+    document.getElementById('errDesc').textContent = erros.length
+      ? 'Erros: ' + erros.join(' | ')
+      : 'Verifique se as planilhas estão publicadas como CSV publicamente.';
+    document.getElementById('stateError').style.display = 'flex';
+    return;
+  }
+
+  const now = new Date();
+  document.getElementById('tsEl').textContent =
+    fmtDate(now) + ' ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+  populateFilters();
+  applyFilters();
+
+  document.getElementById('stateLoading').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
 }
 
-function update(){
-  filteredRows=[...rawData].sort((a,b)=>a.dataAud-b.dataAud);
-  renderKPIs();
-  renderTrend();
-  renderPareto();
-  renderProject();
-  renderAuditor();
+/* ═══════════════════════════════════════════════════════════
+   FILTERS
+   ═══════════════════════════════════════════════════════════ */
+function populateFilters() {
+  const projects = [...new Set(allRows.map(r => r.projeto).filter(Boolean))].sort();
+  selectedProjects = new Set(projects);
+  const dd = document.getElementById('msDD');
+  dd.innerHTML = projects.map(p =>
+    `<label class="ms-opt"><input type="checkbox" value="${p}" checked onchange="onProjChange()"> ${p}</label>`
+  ).join('');
+  updateMSText();
+
+  const auditors = [...new Set(allRows.map(r => r.auditor).filter(Boolean))].sort();
+  const sel = document.getElementById('fAuditor');
+  sel.innerHTML = '<option value="">Todos</option>' +
+    auditors.map(a => `<option value="${a}">${a}</option>`).join('');
+
+  const dates = allRows.map(r => r.isoAud).filter(Boolean).sort();
+  if (dates.length) {
+    document.getElementById('fDateS').value = dates[0];
+    document.getElementById('fDateE').value = dates[dates.length-1];
+  }
 }
 
-function renderKPIs(){
-  const t=filteredRows.length,s=filteredRows.filter(r=>r.correto).length,n=t-s;
-  const p=t>0?(s/t*100).toFixed(1):0;
-  document.getElementById('kpis').innerHTML=`
-    <div class="kpi"><span>Volume Total</span><strong>${t}</strong></div>
-    <div class="kpi"><span>Conformes</span><strong style="color:var(--sim)">${s}</strong></div>
-    <div class="kpi"><span>Inconsistências</span><strong style="color:var(--nao)">${n}</strong></div>
-    <div class="kpi"><span>% Qualidade Acumulada</span><strong style="color:var(--accent)">${p}%</strong></div>
-  `;
-}
-
-function renderTrend(){
-  const map={};
-  filteredRows.forEach(r=>{
-    const d=r.dataAud.toLocaleDateString('pt-BR');
-    if(!map[d])map[d]={s:0,t:0};
-    if(r.correto)map[d].s++;
-    map[d].t++;
-  });
-  const labels=Object.keys(map),data=labels.map(l=>(map[l].s/map[l].t*100).toFixed(1));
-  if(charts.trend)charts.trend.destroy();
-  charts.trend=new Chart('chart-trend',{
-    type:'line',
-    data:{
-      labels,
-      datasets:[{
-        label:'% Qualidade',data,borderColor:C.blue,backgroundColor:'rgba(3,105,161,0.1)',
-        fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:C.white,borderWidth:3,
-        datalabels:{ // ADICIONADO RÓTULO NA LINHA
-          display:true,
-          align:'top',
-          color:C.blue,
-          font:{weight:'700'},
-          formatter:v=>v+'%'
+let msOpen = false;
+function toggleMS() {
+  msOpen = !msOpen;
+  document.getElementById('msDD').classList.toggle('open', msOpen);
+  document.getElementById('msDisplay').classList.toggle('open', msOpen);
+  if (msOpen) {
+    setTimeout(() => {
+      const close = (e) => {
+        if (!document.getElementById('msDD').contains(e.target) &&
+            !document.getElementById('msDisplay').contains(e.target)) {
+          msOpen = false;
+          document.getElementById('msDD').classList.remove('open');
+          document.getElementById('msDisplay').classList.remove('open');
+          document.removeEventListener('click', close);
         }
+      };
+      document.addEventListener('click', close);
+    }, 0);
+  }
+}
+
+function onProjChange() {
+  const checks = document.querySelectorAll('#msDD input[type=checkbox]');
+  selectedProjects = new Set([...checks].filter(c => c.checked).map(c => c.value));
+  updateMSText();
+  applyFilters();
+}
+
+function updateMSText() {
+  const all = document.querySelectorAll('#msDD input[type=checkbox]').length;
+  const sel = selectedProjects.size;
+  document.getElementById('msText').textContent =
+    sel === 0 ? 'Nenhum' : sel === all ? 'Todos' : `${sel} selecionado${sel>1?'s':''}`;
+}
+
+function resetFilters() {
+  document.getElementById('fChassi').value = '';
+  document.getElementById('fAuditor').value = '';
+  const dates = allRows.map(r => r.isoAud).filter(Boolean).sort();
+  if (dates.length) {
+    document.getElementById('fDateS').value = dates[0];
+    document.getElementById('fDateE').value = dates[dates.length-1];
+  }
+  const checks = document.querySelectorAll('#msDD input[type=checkbox]');
+  checks.forEach(c => c.checked = true);
+  selectedProjects = new Set([...checks].map(c => c.value));
+  updateMSText();
+  applyFilters();
+}
+
+function applyFilters() {
+  const chassi  = document.getElementById('fChassi').value.trim().toLowerCase();
+  const dateS   = document.getElementById('fDateS').value;
+  const dateE   = document.getElementById('fDateE').value;
+  const auditor = document.getElementById('fAuditor').value;
+
+  filteredRows = allRows.filter(r => {
+    if (chassi && !r.chassi.toLowerCase().includes(chassi)) return false;
+    if (dateS && r.isoAud && r.isoAud < dateS) return false;
+    if (dateE && r.isoAud && r.isoAud > dateE) return false;
+    if (selectedProjects.size > 0 && !selectedProjects.has(r.projeto)) return false;
+    if (auditor && r.auditor !== auditor) return false;
+    return true;
+  });
+
+  renderKPIs();
+  renderCharts();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPIs
+   ═══════════════════════════════════════════════════════════ */
+function renderKPIs() {
+  const total = filteredRows.length;
+  const sim   = filteredRows.filter(r => r.correto).length;
+  const nao   = total - sim;
+  const pct   = total > 0 ? sim / total * 100 : 0;
+
+  document.getElementById('kTotal').textContent = total.toLocaleString('pt-BR');
+  document.getElementById('kQual').textContent = pct.toFixed(1) + '%';
+  const above = pct >= 95;
+  document.getElementById('kQualAccent').className = 'kpi-accent ' + (above ? 'accent-green' : 'accent-red');
+  document.getElementById('kQualIcon').className = 'kpi-icon ' + (above ? 'icon-green' : 'icon-red');
+  document.getElementById('kQualIcon').textContent = above ? '✅' : '⚠️';
+  const chip = document.getElementById('kQualChip');
+  chip.className = 'kpi-chip ' + (above ? 'chip-green' : 'chip-red');
+  chip.textContent = above ? '✓ Acima da meta (95%)' : `▼ ${(95-pct).toFixed(1)}% abaixo da meta`;
+  document.getElementById('kNao').textContent = nao.toLocaleString('pt-BR');
+  const slas = filteredRows.map(r => r.sla).filter(v => v !== null && v >= 0);
+  const slaAvg = slas.length > 0 ? (slas.reduce((a,b)=>a+b,0)/slas.length).toFixed(1) : '—';
+  document.getElementById('kSla').textContent = slaAvg;
+
+  const aMap = {};
+  filteredRows.forEach(r => { if (r.auditor) aMap[r.auditor] = (aMap[r.auditor]||0)+1; });
+  const top = Object.entries(aMap).sort((a,b)=>b[1]-a[1])[0];
+  if (top) {
+    document.getElementById('kAud').textContent = top[0].split(' ')[0];
+    document.getElementById('kAudChip').textContent = top[1] + ' auditorias';
+  } else {
+    document.getElementById('kAud').textContent = '—';
+    document.getElementById('kAudChip').textContent = '—';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHARTS — helpers
+   ═══════════════════════════════════════════════════════════ */
+const C = {
+  sim:   '#059669',
+  simBg: 'rgba(5,150,105,0.82)',
+  nao:   '#DC2626',
+  naoBg: 'rgba(220,38,38,0.82)',
+  blue:  '#0369A1',
+  blueBg:'rgba(3,105,161,0.85)',
+  txt:   '#0F172A',
+  muted: '#64748B',
+  grid:  '#F1F5F9',
+  white: '#FFFFFF'
+};
+const FONT = { family: "'DM Sans', sans-serif", size: 11, weight: 500 };
+
+/* FUNÇÃO CENTRAL DE RENDERIZAÇÃO DE GRÁFICOS */
+function renderCharts() {
+  const FONT_DL = { family: FONT.family, size: 10, weight: 700 };
+
+  /* 1. GAUGE */
+  const pct = filteredRows.length > 0 ? (filteredRows.filter(r=>r.correto).length / filteredRows.length * 100) : 0;
+  document.getElementById('gaugePct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('gaugePct').style.color = pct >= 95 ? C.sim : C.nao;
+  document.getElementById('gaugeBadge').textContent = pct >= 95 ? 'ALTA PERFORMANCE' : 'ATENÇÃO';
+  document.getElementById('gaugeBadge').style.background = pct >= 95 ? '#D1FAE5' : '#FEE2E2';
+  document.getElementById('gaugeBadge').style.color = pct >= 95 ? C.sim : C.nao;
+
+  if(charts.gauge) charts.gauge.destroy();
+  charts.gauge = new Chart('gaugeChart', {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [pct, 100-pct],
+        backgroundColor: [pct >= 95 ? C.sim : C.nao, '#F1F5F9'],
+        borderWidth: 0, cutout: '82%', circumference: 180, rotation: 270
       }]
     },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      scales:{y:{min:0,max:100},x:{grid:{display:false}}}
-    }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: false }, tooltip: { enabled: false } } }
   });
-}
 
-function renderPareto(){
-  const map={};
-  filteredRows.filter(r=>!r.correto && r.obs).forEach(r=>{map[r.obs]=(map[r.obs]||0)+1});
-  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const labels=sorted.map(s=>s[0]),counts=sorted.map(s=>s[1]);
-  if(charts.pareto)charts.pareto.destroy();
-  charts.pareto=new Chart('chart-pareto',{
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Qtd',data:counts,backgroundColor:C.navy,borderRadius:6,
-        datalabels:dlH(counts,C.white,C.navy) // ATIVADO RÓTULO PARETO
+  /* 2. TENDÊNCIA */
+  const tMap = {};
+  filteredRows.forEach(r => { if(r.isoAud) { if(!tMap[r.isoAud]) tMap[r.isoAud]={s:0,t:0}; if(r.correto) tMap[r.isoAud].s++; tMap[r.isoAud].t++; }});
+  const tLabels = Object.keys(tMap).sort();
+  const tData = tLabels.map(l => (tMap[l].s/tMap[l].t*100).toFixed(1));
+
+  if(charts.trend) charts.trend.destroy();
+  charts.trend = new Chart('trendChart', {
+    type: 'line',
+    data: {
+      labels: tLabels.map(l => l.split('-').reverse().slice(0,2).join('/')),
+      datasets: [{
+        label: '% Qualidade', data: tData, borderColor: C.blue, backgroundColor: 'rgba(14,165,233,0.1)',
+        fill: true, tension: 0.3, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#fff', borderWidth: 3,
+        datalabels: { display: true, align: 'top', color: C.blue, font: FONT_DL, formatter: v => v+'%' }
       }]
     },
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false}
+    options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } },
+    plugins: [ChartDataLabels]
   });
-}
 
-function renderProject(){
-  const pmap={};
-  filteredRows.forEach(r=>{
-    if(!pmap[r.projeto])pmap[r.projeto]={sim:0,nao:0};
-    r.correto?pmap[r.projeto].sim++:pmap[r.projeto].nao++;
-  });
-  const projs=Object.keys(pmap);
-  if(charts.project)charts.project.destroy();
-  charts.project=new Chart('chart-project',{
-    type:'bar',
-    data:{
-      labels:projs,
-      datasets:[
-        {label:'Sim',data:projs.map(p=>pmap[p].sim),backgroundColor:C.sim,datalabels:dlV(null,C.white,C.sim)},
-        {label:'Não',data:projs.map(p=>pmap[p].nao),backgroundColor:C.nao,datalabels:dlV(null,C.white,C.nao)}
+  /* 3. PROJETOS */
+  const pMap = {};
+  filteredRows.forEach(r => { if(!pMap[r.projeto]) pMap[r.projeto]={s:0,n:0}; r.correto?pMap[r.projeto].s++:pMap[r.projeto].n++; });
+  const pLabels = Object.keys(pMap).sort();
+
+  if(charts.project) charts.project.destroy();
+  charts.project = new Chart('projectChart', {
+    type: 'bar',
+    data: {
+      labels: pLabels,
+      datasets: [
+        { label: 'Sim', data: pLabels.map(l=>pMap[l].s), backgroundColor: C.simBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } },
+        { label: 'Não', data: pLabels.map(l=>pMap[l].n), backgroundColor: C.naoBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } }
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false}
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } },
+    plugins: [ChartDataLabels]
   });
-}
 
-function renderAuditor(){
-  const amap={};
-  filteredRows.forEach(r=>{
-    if(!amap[r.auditor])amap[r.auditor]={sim:0,nao:0};
-    r.correto?amap[r.auditor].sim++:amap[r.auditor].nao++;
+  /* 4. PARETO */
+  const eMap = {};
+  filteredRows.filter(r=>!r.correto && r.obs).forEach(r => { const words = r.obs.split(/[,;.\s]+/).filter(w=>w.length>3); words.forEach(w=>{ const k=w.toUpperCase(); eMap[k]=(eMap[k]||0)+1; })});
+  const eSorted = Object.entries(eMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  if(charts.pareto) charts.pareto.destroy();
+  charts.pareto = new Chart('paretoChart', {
+    type: 'bar',
+    data: {
+      labels: eSorted.map(s=>s[0]),
+      datasets: [{ label: 'Ocorrências', data: eSorted.map(s=>s[1]), backgroundColor: '#1E293B', borderRadius: 4, datalabels: { display: true, align: 'end', anchor: 'end', color: '#1E293B', font: FONT_DL } }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false },
+    plugins: [ChartDataLabels]
   });
-  const auds=Object.keys(amap);
-  if(charts.auditor)charts.auditor.destroy();
-  charts.auditor=new Chart('chart-auditor',{
-    type:'bar',
-    data:{
-      labels:auds,
-      datasets:[
-        {label:'Sim',data:auds.map(a=>amap[a].sim),backgroundColor:C.sim,datalabels:dlV(null,C.white,C.sim)},
-        {label:'Não',data:auds.map(a=>amap[a].nao),backgroundColor:C.nao,datalabels:dlV(null,C.white,C.nao)}
+
+  /* 5. AUDITOR */
+  const aMap = {};
+  filteredRows.forEach(r => { if(r.auditor){ if(!aMap[r.auditor]) aMap[r.auditor]={s:0,n:0}; r.correto?aMap[r.auditor].s++:aMap[r.auditor].n++; }});
+  const aLabels = Object.keys(aMap).sort((a,b)=>(aMap[b].s+aMap[b].n)-(aMap[a].s+aMap[a].n));
+
+  if(charts.auditor) charts.auditor.destroy();
+  charts.auditor = new Chart('auditorChart', {
+    type: 'bar',
+    data: {
+      labels: aLabels,
+      datasets: [
+        { label: 'Sim', data: aLabels.map(l=>aMap[l].s), backgroundColor: C.simBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } },
+        { label: 'Não', data: aLabels.map(l=>aMap[l].n), backgroundColor: C.naoBg, datalabels: { display: true, color: '#fff', font: FONT_DL, anchor: 'center' } }
       ]
     },
-    options:{responsive:true,maintainAspectRatio:false}
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } },
+    plugins: [ChartDataLabels]
   });
 }
 
-function exportCSV(){
-  const head=['Projeto','Data','Chassi','Auditor','Correto','Observação'];
-  const rows=filteredRows.map(r=>[r.projeto,r.dataAud.toLocaleDateString(),r.chassi,r.auditor,r.correto?'Sim':'Não',r.obs]);
-  const csv=[head,...rows].map(e=>e.join(",")).join("\n");
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const link=document.createElement("a");
-  link.href=URL.createObjectURL(blob);
-  link.download="relatorio_qa.csv";
-  link.click();
+function exportCSV() {
+  const head = ['Projeto','Data','Chassi','Auditor','Status','Obs'];
+  const body = filteredRows.map(r => [r.projeto, fmtDate(r.dataAud), r.chassi, r.auditor, r.correto?'Sim':'Não', r.obs]);
+  const content = [head, ...body].map(r => r.join(',')).join('\n');
+  const blob = new Blob([content], {type: 'text/csv'});
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', 'relatorio_qa.csv');
+  a.click();
 }
 
-init();
+loadAllData();
 </script>
 </body>
 </html>
