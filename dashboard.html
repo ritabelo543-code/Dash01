@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
 <style>
 :root {
   --bg: #EFF3F8;
@@ -401,14 +403,12 @@ body {
 </head>
 <body>
 
-<!-- ═══════════════ LOADING ═══════════════ -->
 <div id="stateLoading" class="state-wrap">
   <div class="spinner"></div>
   <p class="state-title">Carregando dados...</p>
   <p class="state-desc">Buscando e consolidando todas as abas da planilha. Aguarde um momento.</p>
 </div>
 
-<!-- ═══════════════ ERROR ═══════════════ -->
 <div id="stateError" class="state-wrap" style="display:none">
   <div style="font-size:52px">⚠️</div>
   <p class="state-title" id="errTitle">Falha ao carregar</p>
@@ -416,10 +416,8 @@ body {
   <button class="btn btn-ghost" style="background:var(--accent);color:#fff;margin-top:8px" onclick="loadAllData()">↺ Tentar novamente</button>
 </div>
 
-<!-- ═══════════════ DASHBOARD ═══════════════ -->
 <div id="dashboard" style="display:none">
 
-  <!-- HEADER -->
   <header class="header">
     <div class="header-left">
       <div class="header-logo">📊</div>
@@ -444,7 +442,6 @@ body {
 
   <div class="main">
 
-    <!-- FILTERS -->
     <div class="filters-wrap">
       <div class="fg" style="max-width:190px">
         <span class="fg-label">🔍 Busca por Chassi</span>
@@ -487,7 +484,6 @@ body {
       <button class="btn-reset" onclick="resetFilters()">✕ Limpar filtros</button>
     </div>
 
-    <!-- KPIs -->
     <div class="kpi-grid">
 
       <div class="kpi-card">
@@ -532,7 +528,6 @@ body {
 
     </div>
 
-    <!-- ROW 1 : Gauge + Tendência -->
     <div class="row row-gauge-trend">
 
       <div class="chart-card">
@@ -572,7 +567,6 @@ body {
 
     </div>
 
-    <!-- ROW 2 : Stacked + Pareto -->
     <div class="row row-2col">
 
       <div class="chart-card">
@@ -597,7 +591,6 @@ body {
 
     </div>
 
-    <!-- ROW 3 : Auditor -->
     <div class="row row-1col">
       <div class="chart-card">
         <div class="ch-head">
@@ -610,15 +603,11 @@ body {
       </div>
     </div>
 
-  </div><!-- /main -->
-
-  <div class="footer">
+  </div><div class="footer">
     QA Intelligence Dashboard &nbsp;·&nbsp; Dados em tempo real via Google Sheets &nbsp;·&nbsp; v2.0
   </div>
 
-</div><!-- /dashboard -->
-
-<script>
+</div><script>
 /* ═══════════════════════════════════════════════════════════
    CONFIGURAÇÃO — URLs das abas do Google Sheets (CSV)
    ═══════════════════════════════════════════════════════════ */
@@ -628,6 +617,16 @@ const CSV_URLS = [
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08WRcxagknb0ucDbTkvUyUW7hjqR2uAyHtaSqyZpIJIq8ejzTL-1F2ZC0M4spg8XUQIxBqNz38s_/pub?gid=1819995490&single=true&output=csv',
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vRy08WRcxagknb0ucDbTkvUyUW7hjqR2uAyHtaSqyZpIJIq8ejzTL-1F2ZC0M4spg8XUQIxBqNz38s_/pub?gid=2022041798&single=true&output=csv',
 ];
+
+// ADICIONADO: Configuração global para rótulos de dados
+Chart.register(ChartDataLabels);
+const dlConfig = {
+  anchor: 'end',
+  align: 'top',
+  color: '#0F172A',
+  font: { weight: 'bold', size: 10 },
+  formatter: (value) => value
+};
 
 /* ═══════════════════════════════════════════════════════════
    UTILITÁRIOS
@@ -681,7 +680,6 @@ function findCol(hmap, key) {
   for (const alias of (COL[key]||[key])) {
     if (hmap[alias] !== undefined) return hmap[alias];
   }
-  // fuzzy: check if any header contains the alias
   for (const alias of (COL[key]||[key])) {
     const found = Object.keys(hmap).find(h => h.includes(alias) || alias.includes(h));
     if (found !== undefined) return hmap[found];
@@ -751,12 +749,10 @@ function parseText(text) {
 }
 
 async function loadAllData() {
-  // Show loading
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('stateError').style.display = 'none';
   document.getElementById('stateLoading').style.display = 'flex';
 
-  // Destroy old charts
   Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
   charts = {};
   allRows = [];
@@ -788,7 +784,6 @@ async function loadAllData() {
     return;
   }
 
-  // Timestamp
   const now = new Date();
   document.getElementById('tsEl').textContent =
     fmtDate(now) + ' ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
@@ -804,7 +799,6 @@ async function loadAllData() {
    FILTERS
    ═══════════════════════════════════════════════════════════ */
 function populateFilters() {
-  // Projects multiselect
   const projects = [...new Set(allRows.map(r => r.projeto).filter(Boolean))].sort();
   selectedProjects = new Set(projects);
   const dd = document.getElementById('msDD');
@@ -813,13 +807,11 @@ function populateFilters() {
   ).join('');
   updateMSText();
 
-  // Auditors
   const auditors = [...new Set(allRows.map(r => r.auditor).filter(Boolean))].sort();
   const sel = document.getElementById('fAuditor');
   sel.innerHTML = '<option value="">Todos</option>' +
     auditors.map(a => `<option value="${a}">${a}</option>`).join('');
 
-  // Date range
   const dates = allRows.map(r => r.isoAud).filter(Boolean).sort();
   if (dates.length) {
     document.getElementById('fDateS').value = dates[0];
@@ -908,10 +900,7 @@ function renderKPIs() {
   const nao   = total - sim;
   const pct   = total > 0 ? sim / total * 100 : 0;
 
-  // Volume
   document.getElementById('kTotal').textContent = total.toLocaleString('pt-BR');
-
-  // Qualidade
   document.getElementById('kQual').textContent = pct.toFixed(1) + '%';
   const above = pct >= 95;
   document.getElementById('kQualAccent').className = 'kpi-accent ' + (above ? 'accent-green' : 'accent-red');
@@ -920,16 +909,10 @@ function renderKPIs() {
   const chip = document.getElementById('kQualChip');
   chip.className = 'kpi-chip ' + (above ? 'chip-green' : 'chip-red');
   chip.textContent = above ? '✓ Acima da meta (95%)' : `▼ ${(95-pct).toFixed(1)}% abaixo da meta`;
-
-  // Inconsistência
   document.getElementById('kNao').textContent = nao.toLocaleString('pt-BR');
-
-  // SLA médio
   const slas = filteredRows.map(r => r.sla).filter(v => v !== null && v >= 0);
   const slaAvg = slas.length > 0 ? (slas.reduce((a,b)=>a+b,0)/slas.length).toFixed(1) : '—';
   document.getElementById('kSla').textContent = slaAvg;
-
-  // Auditor destaque
   const aMap = {};
   filteredRows.forEach(r => { if (r.auditor) aMap[r.auditor] = (aMap[r.auditor]||0)+1; });
   const top = Object.entries(aMap).sort((a,b)=>b[1]-a[1])[0];
@@ -943,26 +926,14 @@ function renderKPIs() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   CHARTS — helpers
+   CHARTS
    ═══════════════════════════════════════════════════════════ */
 const C = {
   sim:   '#059669',
-  simBg: 'rgba(5,150,105,0.82)',
   nao:   '#DC2626',
-  naoBg: 'rgba(220,38,38,0.82)',
   blue:  '#0369A1',
-  blueBg:'rgba(3,105,161,0.85)',
-  ref:   '#F59E0B',
-  grid:  '#E8EEF5',
-  txt:   '#475569',
-  font:  'DM Sans',
+  gray:  '#64748B'
 };
-
-const CHART_FONT = { family: C.font, size: 11 };
-
-function destroyC(id) {
-  if (charts[id]) { try { charts[id].destroy(); } catch(e){} delete charts[id]; }
-}
 
 function renderCharts() {
   renderGauge();
@@ -972,360 +943,183 @@ function renderCharts() {
   renderAuditor();
 }
 
-/* ── GAUGE ───────────────────────────────────────────────── */
 function renderGauge() {
-  destroyC('gauge');
   const total = filteredRows.length;
-  const sim   = filteredRows.filter(r => r.correto).length;
-  const pct   = total > 0 ? sim / total * 100 : 0;
-  const above = pct >= 95;
-  const color = above ? C.sim : C.nao;
-
-  document.getElementById('gaugePct').textContent = pct.toFixed(1) + '%';
-  document.getElementById('gaugePct').style.color = color;
-
-  const badge = document.getElementById('gaugeBadge');
-  badge.textContent = above ? '✓ META ATINGIDA' : '⚠ ABAIXO DA META';
-  badge.style.background = above ? '#D1FAE5' : '#FEE2E2';
-  badge.style.color = above ? '#047857' : '#B91C1C';
-
-  const ctx = document.getElementById('gaugeChart').getContext('2d');
-  // We build a semicircle doughnut:
-  // Segment 1: 0→95% (green zone base)
-  // Segment 2: 95→100% (goal zone in lighter green)
-  // Segment 3: empty (bottom half)
-  // Simpler: just show value vs remaining on semi-circle
-  const val = Math.min(Math.max(pct, 0), 100);
-  const remaining = 100 - val;
-
-  charts.gauge = new Chart(ctx, {
+  const sim = filteredRows.filter(r => r.correto).length;
+  const pct = total > 0 ? (sim / total * 100) : 0;
+  
+  document.getElementById('gaugePct').textContent = Math.round(pct) + '%';
+  const color = pct >= 95 ? C.sim : pct >= 90 ? '#F59E0B' : C.nao;
+  
+  if (charts.gauge) charts.gauge.destroy();
+  charts.gauge = new Chart(document.getElementById('gaugeChart'), {
     type: 'doughnut',
     data: {
       datasets: [{
-        data: [val, remaining],
-        backgroundColor: [color, '#EFF3F8'],
+        data: [pct, 100 - pct],
+        backgroundColor: [color, '#F1F5F9'],
         borderWidth: 0,
-        borderRadius: [6, 0],
-        hoverBorderWidth: 0,
+        circumference: 180,
+        rotation: 270,
+        borderRadius: 5
       }]
     },
     options: {
-      rotation: -90,
-      circumference: 180,
-      cutout: '70%',
-      responsive: true,
-      maintainAspectRatio: true,
-      animation: { duration: 900, easing: 'easeInOutQuart' },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ctx.dataIndex === 0
-              ? `Qualidade: ${val.toFixed(1)}%`
-              : `Restante: ${remaining.toFixed(1)}%`
-          }
-        }
-      }
+      aspectRatio: 1.5,
+      plugins: { datalabels: { display: false }, tooltip: { enabled: false } },
+      cutout: '82%'
     }
   });
 }
 
-/* ── TREND ───────────────────────────────────────────────── */
 function renderTrend() {
-  destroyC('trend');
-  const byDate = {};
+  const map = {};
   filteredRows.forEach(r => {
-    if (!r.isoAud) return;
-    if (!byDate[r.isoAud]) byDate[r.isoAud] = { sim:0, total:0 };
-    byDate[r.isoAud].total++;
-    if (r.correto) byDate[r.isoAud].sim++;
+    if (r.isoAud) {
+      if (!map[r.isoAud]) map[r.isoAud] = { s:0, t:0 };
+      map[r.isoAud].t++;
+      if (r.correto) map[r.isoAud].s++;
+    }
   });
-  const labels = Object.keys(byDate).sort();
-  const pcts = labels.map(d => byDate[d].total > 0
-    ? +(byDate[d].sim / byDate[d].total * 100).toFixed(1) : 0);
-  const refs = labels.map(() => 95);
-  const fmtL = labels.map(d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}`; });
+  const labels = Object.keys(map).sort();
+  const data = labels.map(l => (map[l].s / map[l].t * 100).toFixed(1));
 
-  document.getElementById('trendBadge').textContent = labels.length + ' dias';
-
-  const ctx = document.getElementById('trendChart').getContext('2d');
-  charts.trend = new Chart(ctx, {
+  if (charts.trend) charts.trend.destroy();
+  charts.trend = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
-      labels: fmtL,
-      datasets: [
-        {
-          label: '% Qualidade',
-          data: pcts,
-          borderColor: C.blue,
-          backgroundColor: 'rgba(3,105,161,0.07)',
-          fill: true,
-          tension: 0.42,
-          pointRadius: labels.length > 60 ? 2 : 4,
-          pointHoverRadius: 7,
-          pointBackgroundColor: C.blue,
-          borderWidth: 2.5,
-          order: 1,
-        },
-        {
-          label: 'Meta (95%)',
-          data: refs,
-          borderColor: C.ref,
-          borderDash: [7, 4],
-          borderWidth: 2,
-          pointRadius: 0,
-          fill: false,
-          tension: 0,
-          order: 2,
-        }
-      ]
+      labels: labels.map(l => l.split('-').reverse().slice(0,2).join('/')),
+      datasets: [{
+        label: '% Qualidade',
+        data: data,
+        borderColor: C.blue,
+        backgroundColor: 'rgba(3,105,161,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 4
+      }, {
+        label: 'Meta',
+        data: labels.map(() => 95),
+        borderColor: C.nao,
+        borderDash: [5,5],
+        pointRadius: 0,
+        fill: false
+      }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
-      interaction: { mode: 'index', intersect: false },
+      maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { font: CHART_FONT, color: C.txt, boxWidth: 12, padding: 16 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%`,
-            afterLabel: ctx => {
-              if (ctx.datasetIndex === 0 && labels[ctx.dataIndex]) {
-                const d = byDate[labels[ctx.dataIndex]];
-                return `  Sim: ${d.sim}  |  Total: ${d.total}`;
-              }
-              return '';
-            }
-          }
+        // ADICIONADO: Rótulos para o gráfico de tendência
+        datalabels: {
+          ...dlConfig,
+          formatter: (v, ctx) => ctx.datasetIndex === 0 ? v + '%' : ''
         }
       },
-      scales: {
-        x: {
-          grid: { color: C.grid },
-          ticks: { font: CHART_FONT, color: C.txt, maxRotation: 45, maxTicksLimit: 20 }
-        },
-        y: {
-          min: 0, max: 100,
-          grid: { color: C.grid },
-          ticks: { font: CHART_FONT, color: C.txt, callback: v => v + '%' }
-        }
-      }
+      scales: { y: { min: 0, max: 100 } }
     }
   });
 }
 
-/* ── PROJECT STACKED ─────────────────────────────────────── */
 function renderProject() {
-  destroyC('project');
-  const projs = [...new Set(filteredRows.map(r => r.projeto).filter(Boolean))].sort();
-  const simD  = projs.map(p => filteredRows.filter(r => r.projeto===p && r.correto).length);
-  const naoD  = projs.map(p => filteredRows.filter(r => r.projeto===p && !r.correto).length);
+  const projs = [...selectedProjects].sort();
+  const simD = [], naoD = [];
+  projs.forEach(p => {
+    const sub = filteredRows.filter(r => r.projeto === p);
+    simD.push(sub.filter(r => r.correto).length);
+    naoD.push(sub.filter(r => !r.correto).length);
+  });
 
-  const ctx = document.getElementById('projectChart').getContext('2d');
-  charts.project = new Chart(ctx, {
+  if (charts.project) charts.project.destroy();
+  charts.project = new Chart(document.getElementById('projectChart'), {
     type: 'bar',
     data: {
       labels: projs,
       datasets: [
-        { label: 'Conformes (Sim)', data: simD, backgroundColor: C.simBg, borderRadius:5, borderSkipped:false },
-        { label: 'Não Conformes (Não)', data: naoD, backgroundColor: C.naoBg, borderRadius:5, borderSkipped:false },
+        { label: 'Conforme', data: simD, backgroundColor: C.sim },
+        { label: 'Inconsistente', data: naoD, backgroundColor: C.nao }
       ]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
-      interaction: { mode: 'index' },
-      plugins: {
-        legend: { labels: { font: CHART_FONT, color: C.txt, boxWidth:12, padding:14 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const tot = simD[ctx.dataIndex] + naoD[ctx.dataIndex];
-              const p = tot > 0 ? (ctx.parsed.y/tot*100).toFixed(1) : 0;
-              return ` ${ctx.dataset.label}: ${ctx.parsed.y}  (${p}%)`;
-            }
-          }
-        }
+      maintainAspectRatio: false,
+      plugins: { 
+        // ADICIONADO: Rótulos para o gráfico de projeto
+        datalabels: { ...dlConfig, color: '#fff', anchor: 'center', align: 'center' },
+        legend: { position: 'bottom' } 
       },
-      scales: {
-        x: { stacked:true, grid:{display:false}, ticks:{font:CHART_FONT, color:C.txt} },
-        y: { stacked:true, grid:{color:C.grid}, ticks:{font:CHART_FONT, color:C.txt} }
-      }
+      scales: { x: { stacked: true }, y: { stacked: true } }
     }
   });
 }
 
-/* ── PARETO ──────────────────────────────────────────────── */
-const STOPWORDS = new Set([
-  'de','a','o','que','e','do','da','em','um','para','uma','os','no','se','na','por',
-  'mais','as','dos','como','mas','foi','ao','ele','das','tem','seu','sua','ou','ser',
-  'quando','muito','nos','ja','esta','eu','tambem','so','pelo','pela','ate','isso',
-  'ela','entre','era','depois','sem','mesmo','aos','ter','seus','quem','nas','me',
-  'esse','eles','estao','voce','tinha','foram','essa','num','nem','suas','meu','as',
-  'minha','pelos','elas','havia','seja','qual','sera','nos','lhe','essas','esses',
-  'pelas','este','dele','tu','te','ok','sim','nao','obs','item','campo','numero',
-  'informado','informada','preenchido','preenchida','incorreto','incorreta','falta',
-  'esta','nesta','aqui','com','sobre','entre','esse','essa','pelo','pela','para',
-  'data','valor','ano','dias','dia','mes','numero','nro','nr','ref','esta','nao',
-  'sim','corr','err','tipo','cod','codigo','linha',
-]);
-
 function renderPareto() {
-  destroyC('pareto');
-  const naoObs = filteredRows
-    .filter(r => !r.correto && r.obs && r.obs.length > 2)
-    .map(r => r.obs.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
-
-  if (naoObs.length === 0) {
-    const ctx = document.getElementById('paretoChart').getContext('2d');
-    charts.pareto = new Chart(ctx, {
-      type:'bar',
-      data:{ labels:['Sem ocorrências registradas'], datasets:[{data:[0],backgroundColor:'#E8EEF5'}] },
-      options:{ plugins:{legend:{display:false}} }
-    });
-    return;
-  }
-
-  // Tokenize
-  const wc = {};
-  naoObs.forEach(obs => {
-    obs.replace(/[^a-z\s]/g,' ').split(/\s+/)
-      .filter(w => w.length >= 4 && !STOPWORDS.has(w))
-      .forEach(w => { wc[w] = (wc[w]||0)+1; });
+  const map = {};
+  filteredRows.filter(r => !r.correto).forEach(r => {
+    const m = r.obs || 'Sem observação';
+    map[m] = (map[m] || 0) + 1;
   });
-
-  // Top 8 words
-  const topWords = Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([w])=>w);
-
-  // Count observations containing each word
-  const cats = topWords.map(w => ({
-    label: w.charAt(0).toUpperCase() + w.slice(1),
-    count: naoObs.filter(o => o.includes(w)).length,
-  })).sort((a,b) => b.count - a.count);
-
-  // Color ramp: blue gradient
-  const palette = [
-    '#0369A1','#0284C7','#0EA5E9','#38BDF8','#7DD3FC',
-    '#BAE6FD','#2563EB','#3B82F6'
-  ];
-
-  const ctx = document.getElementById('paretoChart').getContext('2d');
-  charts.pareto = new Chart(ctx, {
+  const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 10);
+  
+  if (charts.pareto) charts.pareto.destroy();
+  charts.pareto = new Chart(document.getElementById('paretoChart'), {
     type: 'bar',
     data: {
-      labels: cats.map(c => c.label),
-      datasets: [{
-        label: 'Ocorrências',
-        data: cats.map(c => c.count),
-        backgroundColor: cats.map((_,i) => palette[i % palette.length]),
-        borderRadius: 6,
-        borderSkipped: false,
-      }]
+      labels: sorted.map(s => s[0].length > 20 ? s[0].substring(0,18)+'..' : s[0]),
+      datasets: [{ data: sorted.map(s => s[1]), backgroundColor: '#94A3B8' }]
     },
     options: {
       indexAxis: 'y',
       responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const pct = naoObs.length > 0
-                ? (ctx.parsed.x / naoObs.length * 100).toFixed(1) : 0;
-              return ` ${ctx.parsed.x} ocorrências  (${pct}% dos erros)`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { grid:{color:C.grid}, ticks:{font:CHART_FONT, color:C.txt} },
-        y: { grid:{display:false}, ticks:{font:{...CHART_FONT, size:12}, color:C.txt} }
+      maintainAspectRatio: false,
+      plugins: { 
+        // ADICIONADO: Rótulos para o gráfico de pareto
+        datalabels: dlConfig,
+        legend: { display: false } 
       }
     }
   });
 }
 
-/* ── AUDITOR ─────────────────────────────────────────────── */
 function renderAuditor() {
-  destroyC('auditor');
-  const amap = {};
-  filteredRows.forEach(r => {
-    if (!r.auditor) return;
-    if (!amap[r.auditor]) amap[r.auditor] = {sim:0, nao:0};
-    if (r.correto) amap[r.auditor].sim++; else amap[r.auditor].nao++;
-  });
-  const auds = Object.keys(amap).sort((a,b) =>
-    (amap[b].sim + amap[b].nao) - (amap[a].sim + amap[a].nao)
-  );
-  const simD = auds.map(a => amap[a].sim);
-  const naoD = auds.map(a => amap[a].nao);
+  const auds = [...new Set(filteredRows.map(r => r.auditor).filter(Boolean))].sort();
+  const data = auds.map(a => filteredRows.filter(r => r.auditor === a).length);
 
-  const ctx = document.getElementById('auditorChart').getContext('2d');
-  charts.auditor = new Chart(ctx, {
+  if (charts.auditor) charts.auditor.destroy();
+  charts.auditor = new Chart(document.getElementById('auditorChart'), {
     type: 'bar',
     data: {
       labels: auds,
-      datasets: [
-        { label:'Conformes (Sim)',      data:simD, backgroundColor:C.simBg, borderRadius:5, borderSkipped:false },
-        { label:'Não Conformes (Não)',  data:naoD, backgroundColor:C.naoBg, borderRadius:5, borderSkipped:false },
-      ]
+      datasets: [{ data: data, backgroundColor: C.blue }]
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
-      interaction: { mode: 'index' },
-      plugins: {
-        legend: { labels: { font:CHART_FONT, color:C.txt, boxWidth:12, padding:14 } },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const a = auds[ctx.dataIndex];
-              const tot = amap[a].sim + amap[a].nao;
-              const p = tot > 0 ? (ctx.parsed.y/tot*100).toFixed(1) : 0;
-              return ` ${ctx.dataset.label}: ${ctx.parsed.y}  (${p}%)`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: { grid:{display:false}, ticks:{font:CHART_FONT, color:C.txt} },
-        y: { grid:{color:C.grid},  ticks:{font:CHART_FONT, color:C.txt} }
+      maintainAspectRatio: false,
+      plugins: { 
+        // ADICIONADO: Rótulos para o gráfico de auditor
+        datalabels: dlConfig,
+        legend: { display: false } 
       }
     }
   });
 }
 
 /* ═══════════════════════════════════════════════════════════
-   EXPORTAR CSV
+   EXPORT
    ═══════════════════════════════════════════════════════════ */
 function exportCSV() {
-  const header = ['Projeto','Data Calibração','Data Auditoria','Chassi','Auditor','Auditoria Correta?','Observação','SLA (dias)'];
-  const rows = filteredRows.map(r => [
-    r.projeto,
-    fmtDate(r.dataCal),
-    fmtDate(r.dataAud),
-    r.chassi,
-    r.auditor,
-    r.correto ? 'Sim' : 'Não',
-    r.obs,
-    r.sla !== null ? r.sla : '',
-  ]);
-  const csv = [header, ...rows]
-    .map(row => row.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','))
-    .join('\r\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `qa_auditoria_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  if (!filteredRows.length) return;
+  const head = 'Projeto,Data,Chassi,Auditor,Status,Obs\n';
+  const csv = head + filteredRows.map(r => 
+    `"${r.projeto}","${fmtDate(r.dataAud)}","${r.chassi}","${r.auditor}","${r.correto?'Sim':'Não'}","${r.obs.replace(/"/g,'')}"`
+  ).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", "qa_export.csv");
+  link.click();
 }
 
-/* ═══════════════════════════════════════════════════════════
-   INIT
-   ═══════════════════════════════════════════════════════════ */
 loadAllData();
 </script>
 </body>
