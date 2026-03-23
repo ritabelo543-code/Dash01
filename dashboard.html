@@ -223,7 +223,7 @@ body {
 /* ── KPI GRID ─────────────────────────────────────────────── */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Ajustado para 4 colunas */
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -376,7 +376,7 @@ body {
 
 /* ── RESPONSIVE ──────────────────────────────────────────── */
 @media (max-width: 1280px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
   .row-gauge-trend { grid-template-columns: 1fr; }
   .row-2col { grid-template-columns: 1fr; }
 }
@@ -401,12 +401,14 @@ body {
 </head>
 <body>
 
+<!-- ═══════════════ LOADING ═══════════════ -->
 <div id="stateLoading" class="state-wrap">
   <div class="spinner"></div>
   <p class="state-title">Carregando dados...</p>
   <p class="state-desc">Buscando e consolidando todas as abas da planilha. Aguarde um momento.</p>
 </div>
 
+<!-- ═══════════════ ERROR ═══════════════ -->
 <div id="stateError" class="state-wrap" style="display:none">
   <div style="font-size:52px">⚠️</div>
   <p class="state-title" id="errTitle">Falha ao carregar</p>
@@ -414,8 +416,10 @@ body {
   <button class="btn btn-ghost" style="background:var(--accent);color:#fff;margin-top:8px" onclick="loadAllData()">↺ Tentar novamente</button>
 </div>
 
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
 <div id="dashboard" style="display:none">
 
+  <!-- HEADER -->
   <header class="header">
     <div class="header-left">
       <div class="header-logo">📊</div>
@@ -440,6 +444,7 @@ body {
 
   <div class="main">
 
+    <!-- FILTERS -->
     <div class="filters-wrap">
       <div class="fg" style="max-width:190px">
         <span class="fg-label">🔍 Busca por Chassi</span>
@@ -482,6 +487,7 @@ body {
       <button class="btn-reset" onclick="resetFilters()">✕ Limpar filtros</button>
     </div>
 
+    <!-- KPIs -->
     <div class="kpi-grid">
 
       <div class="kpi-card">
@@ -508,6 +514,8 @@ body {
         <div class="kpi-chip chip-red">não conformes</div>
       </div>
 
+    
+
       <div class="kpi-card">
         <div class="kpi-accent accent-purple"></div>
         <div class="kpi-icon icon-purple">🏆</div>
@@ -518,6 +526,7 @@ body {
 
     </div>
 
+    <!-- ROW 1 : Gauge + Tendência -->
     <div class="row row-gauge-trend">
 
       <div class="chart-card">
@@ -557,6 +566,7 @@ body {
 
     </div>
 
+    <!-- ROW 2 : Stacked + Pareto -->
     <div class="row row-2col">
 
       <div class="chart-card">
@@ -581,6 +591,7 @@ body {
 
     </div>
 
+    <!-- ROW 3 : Auditor -->
     <div class="row row-1col">
       <div class="chart-card">
         <div class="ch-head">
@@ -593,11 +604,15 @@ body {
       </div>
     </div>
 
-  </div><div class="footer">
+  </div><!-- /main -->
+
+  <div class="footer">
     QA Intelligence Dashboard &nbsp;·&nbsp; Dados em tempo real via Google Sheets &nbsp;·&nbsp; v2.0
   </div>
 
-</div><script>
+</div><!-- /dashboard -->
+
+<script>
 /* ═══════════════════════════════════════════════════════════
    CONFIGURAÇÃO — URLs das abas do Google Sheets (CSV)
    ═══════════════════════════════════════════════════════════ */
@@ -660,6 +675,7 @@ function findCol(hmap, key) {
   for (const alias of (COL[key]||[key])) {
     if (hmap[alias] !== undefined) return hmap[alias];
   }
+  // fuzzy: check if any header contains the alias
   for (const alias of (COL[key]||[key])) {
     const found = Object.keys(hmap).find(h => h.includes(alias) || alias.includes(h));
     if (found !== undefined) return hmap[found];
@@ -729,10 +745,12 @@ function parseText(text) {
 }
 
 async function loadAllData() {
+  // Show loading
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('stateError').style.display = 'none';
   document.getElementById('stateLoading').style.display = 'flex';
 
+  // Destroy old charts
   Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
   charts = {};
   allRows = [];
@@ -764,6 +782,7 @@ async function loadAllData() {
     return;
   }
 
+  // Timestamp
   const now = new Date();
   document.getElementById('tsEl').textContent =
     fmtDate(now) + ' ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
@@ -779,6 +798,7 @@ async function loadAllData() {
    FILTERS
    ═══════════════════════════════════════════════════════════ */
 function populateFilters() {
+  // Projects multiselect
   const projects = [...new Set(allRows.map(r => r.projeto).filter(Boolean))].sort();
   selectedProjects = new Set(projects);
   const dd = document.getElementById('msDD');
@@ -787,11 +807,13 @@ function populateFilters() {
   ).join('');
   updateMSText();
 
+  // Auditors
   const auditors = [...new Set(allRows.map(r => r.auditor).filter(Boolean))].sort();
   const sel = document.getElementById('fAuditor');
   sel.innerHTML = '<option value="">Todos</option>' +
     auditors.map(a => `<option value="${a}">${a}</option>`).join('');
 
+  // Date range
   const dates = allRows.map(r => r.isoAud).filter(Boolean).sort();
   if (dates.length) {
     document.getElementById('fDateS').value = dates[0];
@@ -880,8 +902,10 @@ function renderKPIs() {
   const nao   = total - sim;
   const pct   = total > 0 ? sim / total * 100 : 0;
 
+  // Volume
   document.getElementById('kTotal').textContent = total.toLocaleString('pt-BR');
 
+  // Qualidade
   document.getElementById('kQual').textContent = pct.toFixed(1) + '%';
   const above = pct >= 95;
   document.getElementById('kQualAccent').className = 'kpi-accent ' + (above ? 'accent-green' : 'accent-red');
@@ -891,8 +915,15 @@ function renderKPIs() {
   chip.className = 'kpi-chip ' + (above ? 'chip-green' : 'chip-red');
   chip.textContent = above ? '✓ Acima da meta (95%)' : `▼ ${(95-pct).toFixed(1)}% abaixo da meta`;
 
+  // Inconsistência
   document.getElementById('kNao').textContent = nao.toLocaleString('pt-BR');
 
+  // SLA médio
+  const slas = filteredRows.map(r => r.sla).filter(v => v !== null && v >= 0);
+  const slaAvg = slas.length > 0 ? (slas.reduce((a,b)=>a+b,0)/slas.length).toFixed(1) : '—';
+  document.getElementById('kSla').textContent = slaAvg;
+
+  // Auditor destaque
   const aMap = {};
   filteredRows.forEach(r => { if (r.auditor) aMap[r.auditor] = (aMap[r.auditor]||0)+1; });
   const top = Object.entries(aMap).sort((a,b)=>b[1]-a[1])[0];
@@ -904,6 +935,392 @@ function renderKPIs() {
     document.getElementById('kAudChip').textContent = '—';
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CHARTS — helpers
+   ═══════════════════════════════════════════════════════════ */
+const C = {
+  sim:   '#059669',
+  simBg: 'rgba(5,150,105,0.82)',
+  nao:   '#DC2626',
+  naoBg: 'rgba(220,38,38,0.82)',
+  blue:  '#0369A1',
+  blueBg:'rgba(3,105,161,0.85)',
+  ref:   '#F59E0B',
+  grid:  '#E8EEF5',
+  txt:   '#475569',
+  font:  'DM Sans',
+};
+
+const CHART_FONT = { family: C.font, size: 11 };
+
+function destroyC(id) {
+  if (charts[id]) { try { charts[id].destroy(); } catch(e){} delete charts[id]; }
+}
+
+function renderCharts() {
+  renderGauge();
+  renderTrend();
+  renderProject();
+  renderPareto();
+  renderAuditor();
+}
+
+/* ── GAUGE ───────────────────────────────────────────────── */
+function renderGauge() {
+  destroyC('gauge');
+  const total = filteredRows.length;
+  const sim   = filteredRows.filter(r => r.correto).length;
+  const pct   = total > 0 ? sim / total * 100 : 0;
+  const above = pct >= 95;
+  const color = above ? C.sim : C.nao;
+
+  document.getElementById('gaugePct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('gaugePct').style.color = color;
+
+  const badge = document.getElementById('gaugeBadge');
+  badge.textContent = above ? '✓ META ATINGIDA' : '⚠ ABAIXO DA META';
+  badge.style.background = above ? '#D1FAE5' : '#FEE2E2';
+  badge.style.color = above ? '#047857' : '#B91C1C';
+
+  const ctx = document.getElementById('gaugeChart').getContext('2d');
+  // We build a semicircle doughnut:
+  // Segment 1: 0→95% (green zone base)
+  // Segment 2: 95→100% (goal zone in lighter green)
+  // Segment 3: empty (bottom half)
+  // Simpler: just show value vs remaining on semi-circle
+  const val = Math.min(Math.max(pct, 0), 100);
+  const remaining = 100 - val;
+
+  charts.gauge = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [val, remaining],
+        backgroundColor: [color, '#EFF3F8'],
+        borderWidth: 0,
+        borderRadius: [6, 0],
+        hoverBorderWidth: 0,
+      }]
+    },
+    options: {
+      rotation: -90,
+      circumference: 180,
+      cutout: '70%',
+      responsive: true,
+      maintainAspectRatio: true,
+      animation: { duration: 900, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ctx.dataIndex === 0
+              ? `Qualidade: ${val.toFixed(1)}%`
+              : `Restante: ${remaining.toFixed(1)}%`
+          }
+        }
+      }
+    }
+  });
+}
+
+/* ── TREND ───────────────────────────────────────────────── */
+function renderTrend() {
+  destroyC('trend');
+  const byDate = {};
+  filteredRows.forEach(r => {
+    if (!r.isoAud) return;
+    if (!byDate[r.isoAud]) byDate[r.isoAud] = { sim:0, total:0 };
+    byDate[r.isoAud].total++;
+    if (r.correto) byDate[r.isoAud].sim++;
+  });
+  const labels = Object.keys(byDate).sort();
+  const pcts = labels.map(d => byDate[d].total > 0
+    ? +(byDate[d].sim / byDate[d].total * 100).toFixed(1) : 0);
+  const refs = labels.map(() => 95);
+  const fmtL = labels.map(d => { const [y,m,dd]=d.split('-'); return `${dd}/${m}`; });
+
+  document.getElementById('trendBadge').textContent = labels.length + ' dias';
+
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  charts.trend = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: fmtL,
+      datasets: [
+        {
+          label: '% Qualidade',
+          data: pcts,
+          borderColor: C.blue,
+          backgroundColor: 'rgba(3,105,161,0.07)',
+          fill: true,
+          tension: 0.42,
+          pointRadius: labels.length > 60 ? 2 : 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: C.blue,
+          borderWidth: 2.5,
+          order: 1,
+        },
+        {
+          label: 'Meta (95%)',
+          data: refs,
+          borderColor: C.ref,
+          borderDash: [7, 4],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false,
+          tension: 0,
+          order: 2,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { font: CHART_FONT, color: C.txt, boxWidth: 12, padding: 16 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%`,
+            afterLabel: ctx => {
+              if (ctx.datasetIndex === 0 && labels[ctx.dataIndex]) {
+                const d = byDate[labels[ctx.dataIndex]];
+                return `  Sim: ${d.sim}  |  Total: ${d.total}`;
+              }
+              return '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: C.grid },
+          ticks: { font: CHART_FONT, color: C.txt, maxRotation: 45, maxTicksLimit: 20 }
+        },
+        y: {
+          min: 0, max: 100,
+          grid: { color: C.grid },
+          ticks: { font: CHART_FONT, color: C.txt, callback: v => v + '%' }
+        }
+      }
+    }
+  });
+}
+
+/* ── PROJECT STACKED ─────────────────────────────────────── */
+function renderProject() {
+  destroyC('project');
+  const projs = [...new Set(filteredRows.map(r => r.projeto).filter(Boolean))].sort();
+  const simD  = projs.map(p => filteredRows.filter(r => r.projeto===p && r.correto).length);
+  const naoD  = projs.map(p => filteredRows.filter(r => r.projeto===p && !r.correto).length);
+
+  const ctx = document.getElementById('projectChart').getContext('2d');
+  charts.project = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: projs,
+      datasets: [
+        { label: 'Conformes (Sim)', data: simD, backgroundColor: C.simBg, borderRadius:5, borderSkipped:false },
+        { label: 'Não Conformes (Não)', data: naoD, backgroundColor: C.naoBg, borderRadius:5, borderSkipped:false },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index' },
+      plugins: {
+        legend: { labels: { font: CHART_FONT, color: C.txt, boxWidth:12, padding:14 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const tot = simD[ctx.dataIndex] + naoD[ctx.dataIndex];
+              const p = tot > 0 ? (ctx.parsed.y/tot*100).toFixed(1) : 0;
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y}  (${p}%)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked:true, grid:{display:false}, ticks:{font:CHART_FONT, color:C.txt} },
+        y: { stacked:true, grid:{color:C.grid}, ticks:{font:CHART_FONT, color:C.txt} }
+      }
+    }
+  });
+}
+
+/* ── PARETO ──────────────────────────────────────────────── */
+const STOPWORDS = new Set([
+  'de','a','o','que','e','do','da','em','um','para','uma','os','no','se','na','por',
+  'mais','as','dos','como','mas','foi','ao','ele','das','tem','seu','sua','ou','ser',
+  'quando','muito','nos','ja','esta','eu','tambem','so','pelo','pela','ate','isso',
+  'ela','entre','era','depois','sem','mesmo','aos','ter','seus','quem','nas','me',
+  'esse','eles','estao','voce','tinha','foram','essa','num','nem','suas','meu','as',
+  'minha','pelos','elas','havia','seja','qual','sera','nos','lhe','essas','esses',
+  'pelas','este','dele','tu','te','ok','sim','nao','obs','item','campo','numero',
+  'informado','informada','preenchido','preenchida','incorreto','incorreta','falta',
+  'esta','nesta','aqui','com','sobre','entre','esse','essa','pelo','pela','para',
+  'data','valor','ano','dias','dia','mes','numero','nro','nr','ref','esta','nao',
+  'sim','corr','err','tipo','cod','codigo','linha',
+]);
+
+function renderPareto() {
+  destroyC('pareto');
+  const naoObs = filteredRows
+    .filter(r => !r.correto && r.obs && r.obs.length > 2)
+    .map(r => r.obs.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+
+  if (naoObs.length === 0) {
+    const ctx = document.getElementById('paretoChart').getContext('2d');
+    charts.pareto = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:['Sem ocorrências registradas'], datasets:[{data:[0],backgroundColor:'#E8EEF5'}] },
+      options:{ plugins:{legend:{display:false}} }
+    });
+    return;
+  }
+
+  // Tokenize
+  const wc = {};
+  naoObs.forEach(obs => {
+    obs.replace(/[^a-z\s]/g,' ').split(/\s+/)
+      .filter(w => w.length >= 4 && !STOPWORDS.has(w))
+      .forEach(w => { wc[w] = (wc[w]||0)+1; });
+  });
+
+  // Top 8 words
+  const topWords = Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([w])=>w);
+
+  // Count observations containing each word
+  const cats = topWords.map(w => ({
+    label: w.charAt(0).toUpperCase() + w.slice(1),
+    count: naoObs.filter(o => o.includes(w)).length,
+  })).sort((a,b) => b.count - a.count);
+
+  // Color ramp: blue gradient
+  const palette = [
+    '#0369A1','#0284C7','#0EA5E9','#38BDF8','#7DD3FC',
+    '#BAE6FD','#2563EB','#3B82F6'
+  ];
+
+  const ctx = document.getElementById('paretoChart').getContext('2d');
+  charts.pareto = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: cats.map(c => c.label),
+      datasets: [{
+        label: 'Ocorrências',
+        data: cats.map(c => c.count),
+        backgroundColor: cats.map((_,i) => palette[i % palette.length]),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const pct = naoObs.length > 0
+                ? (ctx.parsed.x / naoObs.length * 100).toFixed(1) : 0;
+              return ` ${ctx.parsed.x} ocorrências  (${pct}% dos erros)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{color:C.grid}, ticks:{font:CHART_FONT, color:C.txt} },
+        y: { grid:{display:false}, ticks:{font:{...CHART_FONT, size:12}, color:C.txt} }
+      }
+    }
+  });
+}
+
+/* ── AUDITOR ─────────────────────────────────────────────── */
+function renderAuditor() {
+  destroyC('auditor');
+  const amap = {};
+  filteredRows.forEach(r => {
+    if (!r.auditor) return;
+    if (!amap[r.auditor]) amap[r.auditor] = {sim:0, nao:0};
+    if (r.correto) amap[r.auditor].sim++; else amap[r.auditor].nao++;
+  });
+  const auds = Object.keys(amap).sort((a,b) =>
+    (amap[b].sim + amap[b].nao) - (amap[a].sim + amap[a].nao)
+  );
+  const simD = auds.map(a => amap[a].sim);
+  const naoD = auds.map(a => amap[a].nao);
+
+  const ctx = document.getElementById('auditorChart').getContext('2d');
+  charts.auditor = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: auds,
+      datasets: [
+        { label:'Conformes (Sim)',      data:simD, backgroundColor:C.simBg, borderRadius:5, borderSkipped:false },
+        { label:'Não Conformes (Não)',  data:naoD, backgroundColor:C.naoBg, borderRadius:5, borderSkipped:false },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      interaction: { mode: 'index' },
+      plugins: {
+        legend: { labels: { font:CHART_FONT, color:C.txt, boxWidth:12, padding:14 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const a = auds[ctx.dataIndex];
+              const tot = amap[a].sim + amap[a].nao;
+              const p = tot > 0 ? (ctx.parsed.y/tot*100).toFixed(1) : 0;
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y}  (${p}%)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{font:CHART_FONT, color:C.txt} },
+        y: { grid:{color:C.grid},  ticks:{font:CHART_FONT, color:C.txt} }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXPORTAR CSV
+   ═══════════════════════════════════════════════════════════ */
+function exportCSV() {
+  const header = ['Projeto','Data Calibração','Data Auditoria','Chassi','Auditor','Auditoria Correta?','Observação','SLA (dias)'];
+  const rows = filteredRows.map(r => [
+    r.projeto,
+    fmtDate(r.dataCal),
+    fmtDate(r.dataAud),
+    r.chassi,
+    r.auditor,
+    r.correto ? 'Sim' : 'Não',
+    r.obs,
+    r.sla !== null ? r.sla : '',
+  ]);
+  const csv = [header, ...rows]
+    .map(row => row.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','))
+    .join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `qa_auditoria_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════ */
+loadAllData();
 </script>
 </body>
 </html>
