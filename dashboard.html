@@ -15,93 +15,88 @@
   --navy:#0C2340;--navy-mid:#163556;--navy-light:#1E4473;
   --accent:#0369A1;--accent-bright:#0EA5E9;
   --sim:#10B981;--nao:#EF4444;--txt:#1E293B;--txt-light:#64748B;
+  --grid:#F1F5F9;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt); padding:20px; }
+* { margin:0; padding:0; box-sizing:border-box; outline:none; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--txt); padding:20px; line-height:1.5; }
 .dash { max-width:1400px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
 header { display:flex; justify-content:space-between; align-items:center; background:var(--navy); padding:20px 30px; border-radius:16px; color:white; box-shadow:0 4px 20px rgba(0,0,0,0.1); }
-header h1 { font-family:'Syne',sans-serif; font-size:24px; letter-spacing:-0.5px; }
+header h1 { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; letter-spacing:-0.5px; }
 .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:20px; }
-.kpi { background:var(--card); padding:20px; border-radius:16px; border:1px solid var(--border); display:flex; flex-direction:column; gap:8px; }
+.kpi { background:var(--card); padding:20px; border-radius:16px; border:1px solid var(--border); display:flex; flex-direction:column; gap:8px; transition:0.2s; }
 .kpi span { font-size:13px; color:var(--txt-light); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
 .kpi strong { font-size:28px; color:var(--navy); font-weight:700; }
 .charts { display:grid; grid-template-columns:repeat(2,1fr); gap:20px; }
-.chart-card { background:var(--card); padding:25px; border-radius:16px; border:1px solid var(--border); min-height:350px; }
+.chart-card { background:var(--card); padding:25px; border-radius:16px; border:1px solid var(--border); min-height:350px; display:flex; flex-direction:column; }
 .chart-card.full { grid-column: span 2; }
 .chart-card h3 { font-size:16px; margin-bottom:20px; color:var(--navy); font-weight:700; display:flex; align-items:center; gap:10px; }
 canvas { width:100% !important; height:100% !important; }
 .btn-export { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:white; padding:10px 20px; border-radius:8px; cursor:pointer; font-weight:600; transition:0.2s; }
-.btn-export:hover { background:var(--accent); }
+.btn-export:hover { background:var(--accent); border-color:var(--accent); }
 </style>
 </head>
 <body>
 <div class="dash">
-  <header>
-    <h1>QA Intelligence Dashboard</h1>
-    <button class="btn-export" onclick="exportCSV()">Exportar Relatório</button>
-  </header>
+  <header><h1>QA Intelligence Dashboard</h1><button class="btn-export" onclick="exportCSV()">Exportar Dados</button></header>
   <div class="kpis" id="kpis"></div>
   <div class="charts">
-    <div class="chart-card full"><h3 id="title-trend">Tendência de Qualidade Diária</h3><canvas id="chart-trend"></canvas></div>
-    <div class="chart-card"><h3>Top 10 Motivos de Inconsistência</h3><canvas id="chart-pareto"></canvas></div>
+    <div class="chart-card full"><h3 id="title-trend">Tendência de Qualidade</h3><canvas id="chart-trend"></canvas></div>
+    <div class="chart-card"><h3>Top 10 Inconsistências</h3><canvas id="chart-pareto"></canvas></div>
     <div class="chart-card"><h3>Volume por Projeto</h3><canvas id="chart-project"></canvas></div>
-    <div class="chart-card full"><h3>Desempenho por Auditor</h3><canvas id="chart-auditor"></canvas></div>
+    <div class="chart-card full"><h3>Performance por Auditor</h3><canvas id="chart-auditor"></canvas></div>
   </div>
 </div>
 
 <script>
-// REGISTRO GLOBAL DO PLUGIN DE RÓTULOS
+// REGISTRO DO PLUGIN (Necessário para que os rótulos apareçam)
 Chart.register(ChartDataLabels);
 
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-1_zXfM7vF3qQdKx5_8Ew7e8hGf6_r8w_p9t/pub?output=csv';
-const C = { navy:'#0C2340', blue:'#0369A1', sim:'#10B981', nao:'#EF4444', txt:'#1E293B', grid:'#F1F5F9', white:'#FFFFFF' };
-const FONT = { family:'DM Sans', size:11, weight:'500' };
+const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vS-1_zXfM7vF3qQdKx5_8Ew7e8hGf6_r8w_p9t/pub?output=csv';
+const C={navy:'#0C2340',blue:'#0369A1',sim:'#10B981',nao:'#EF4444',txt:'#1E293B',grid:'#F1F5F9',white:'#FFFFFF'};
+const FONT={family:'DM Sans',size:11,weight:'500'};
 
-let rawData = [], filteredRows = [], charts = {};
+let rawData=[],filteredRows=[],charts={};
 
-/* CONFIGURAÇÃO DE RÓTULOS */
-const dlV = (dataset, color, bg) => ({
-  display: true,
-  anchor: 'end',
-  align: 'top',
-  color: bg,
-  font: { weight: '700', size: 10 },
-  offset: 4
+/* AUXILIARES DE RÓTULOS (Mantendo sua lógica original) */
+const dlV=(ds,color,bg)=>({
+  display:true,
+  anchor:'end',
+  align:'top',
+  color:bg,
+  font:{family:'DM Sans',size:10,weight:'700'},
+  offset:4,
+  formatter:v=>v
 });
 
-const dlH = (dataset, color, bg) => ({
-  display: true,
-  anchor: 'end',
-  align: 'right',
-  color: bg,
-  font: { weight: '700', size: 10 },
-  offset: 4
+const dlH=(ds,color,bg)=>({
+  display:true,
+  anchor:'end',
+  align:'right',
+  color:bg,
+  font:{family:'DM Sans',size:10,weight:'700'},
+  offset:4,
+  formatter:v=>v
 });
 
-async function init() {
-  Papa.parse(CSV_URL, {
-    download: true, header: true, skipEmptyLines: true,
-    complete: (results) => {
-      rawData = results.data.map(normalizeRow);
-      updateDashboard();
+async function init(){
+  Papa.parse(CSV_URL,{
+    download:true,header:true,skipEmptyLines:true,
+    complete:res=>{
+      rawData=res.data.map(r=>({
+        projeto:r['Projeto'],
+        dataAud:new Date(r['Data Auditoria']),
+        chassi:r['Chassi'],
+        auditor:r['Auditor'],
+        correto:String(r['Auditoria Correta?']).trim().toLowerCase()==='sim',
+        obs:r['Observação']||''
+      })).filter(r=>!isNaN(r.dataAud));
+      update();
     }
   });
 }
 
-function normalizeRow(r) {
-  const status = String(r['Auditoria Correta?'] || '').trim().toLowerCase();
-  return {
-    projeto: r['Projeto'],
-    dataAud: new Date(r['Data Auditoria']),
-    chassi: r['Chassi'],
-    auditor: r['Auditor'],
-    correto: status === 'sim',
-    obs: r['Observação'] || ''
-  };
-}
-
-function updateDashboard() {
-  filteredRows = [...rawData].sort((a,b) => a.dataAud - b.dataAud);
+function update(){
+  filteredRows=[...rawData].sort((a,b)=>a.dataAud-b.dataAud);
   renderKPIs();
   renderTrend();
   renderPareto();
@@ -109,126 +104,119 @@ function updateDashboard() {
   renderAuditor();
 }
 
-function renderKPIs() {
-  const total = filteredRows.length;
-  const sim = filteredRows.filter(r => r.correto).length;
-  const nao = total - sim;
-  const perc = total > 0 ? ((sim/total)*100).toFixed(1) : 0;
-  document.getElementById('kpis').innerHTML = `
-    <div class="kpi"><span>Volume Total</span><strong>${total}</strong></div>
-    <div class="kpi"><span>Conformes</span><strong style="color:var(--sim)">${sim}</strong></div>
-    <div class="kpi"><span>Inconsistentes</span><strong style="color:var(--nao)">${nao}</strong></div>
-    <div class="kpi"><span>% Qualidade</span><strong style="color:var(--accent)">${perc}%</strong></div>
+function renderKPIs(){
+  const t=filteredRows.length,s=filteredRows.filter(r=>r.correto).length,n=t-s;
+  const p=t>0?(s/t*100).toFixed(1):0;
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><span>Volume Total</span><strong>${t}</strong></div>
+    <div class="kpi"><span>Conformes</span><strong style="color:var(--sim)">${s}</strong></div>
+    <div class="kpi"><span>Inconsistências</span><strong style="color:var(--nao)">${n}</strong></div>
+    <div class="kpi"><span>% Qualidade Acumulada</span><strong style="color:var(--accent)">${p}%</strong></div>
   `;
 }
 
-function renderTrend() {
-  const map = {};
-  filteredRows.forEach(r => {
-    const d = r.dataAud.toLocaleDateString('pt-BR');
-    if(!map[d]) map[d] = { s:0, t:0 };
-    if(r.correto) map[d].s++;
+function renderTrend(){
+  const map={};
+  filteredRows.forEach(r=>{
+    const d=r.dataAud.toLocaleDateString('pt-BR');
+    if(!map[d])map[d]={s:0,t:0};
+    if(r.correto)map[d].s++;
     map[d].t++;
   });
-  const labels = Object.keys(map);
-  const data = labels.map(l => ((map[l].s/map[l].t)*100).toFixed(1));
-  if(charts.trend) charts.trend.destroy();
-  charts.trend = new Chart('chart-trend', {
+  const labels=Object.keys(map),data=labels.map(l=>(map[l].s/map[l].t*100).toFixed(1));
+  if(charts.trend)charts.trend.destroy();
+  charts.trend=new Chart('chart-trend',{
     type:'line',
     data:{
       labels,
       datasets:[{
-        label:'% Qualidade', data, borderColor:C.blue, backgroundColor:'rgba(3,105,161,0.1)',
-        fill:true, tension:0.3, pointRadius:4, pointBackgroundColor:C.white, borderWidth:3,
-        datalabels: {
-          display: true,
-          anchor: 'end',
-          align: 'top',
-          color: C.blue,
-          font: { weight: '700', size: 10 },
-          formatter: v => v + '%'
+        label:'% Qualidade',data,borderColor:C.blue,backgroundColor:'rgba(3,105,161,0.1)',
+        fill:true,tension:0.3,pointRadius:4,pointBackgroundColor:C.white,borderWidth:3,
+        datalabels:{ // ADICIONADO RÓTULO NA LINHA
+          display:true,
+          align:'top',
+          color:C.blue,
+          font:{weight:'700'},
+          formatter:v=>v+'%'
         }
       }]
     },
     options:{
-      responsive:true, maintainAspectRatio:false,
-      scales:{ y:{ min:0, max:100, ticks:{ font:FONT, color:C.txt } }, x:{ ticks:{ font:FONT, color:C.txt } } }
+      responsive:true,maintainAspectRatio:false,
+      scales:{y:{min:0,max:100},x:{grid:{display:false}}}
     }
   });
 }
 
-function renderPareto() {
-  const map = {};
-  filteredRows.filter(r => !r.correto && r.obs).forEach(r => {
-    map[r.obs] = (map[r.obs] || 0) + 1;
-  });
-  const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,10);
-  const labels = sorted.map(s => s[0]);
-  const counts = sorted.map(s => s[1]);
-  if(charts.pareto) charts.pareto.destroy();
-  charts.pareto = new Chart('chart-pareto', {
+function renderPareto(){
+  const map={};
+  filteredRows.filter(r=>!r.correto && r.obs).forEach(r=>{map[r.obs]=(map[r.obs]||0)+1});
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const labels=sorted.map(s=>s[0]),counts=sorted.map(s=>s[1]);
+  if(charts.pareto)charts.pareto.destroy();
+  charts.pareto=new Chart('chart-pareto',{
     type:'bar',
     data:{
       labels,
       datasets:[{
-        label:'Ocorrências', data:counts, backgroundColor:C.navy, borderRadius:6,
-        datalabels: dlH(counts, C.white, C.navy)
+        label:'Qtd',data:counts,backgroundColor:C.navy,borderRadius:6,
+        datalabels:dlH(counts,C.white,C.navy) // ATIVADO RÓTULO PARETO
       }]
     },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false }
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false}
   });
 }
 
-function renderProject() {
-  const pmap = {};
-  filteredRows.forEach(r => {
-    if(!pmap[r.projeto]) pmap[r.projeto] = { sim:0, nao:0 };
-    r.correto ? pmap[r.projeto].sim++ : pmap[r.projeto].nao++;
+function renderProject(){
+  const pmap={};
+  filteredRows.forEach(r=>{
+    if(!pmap[r.projeto])pmap[r.projeto]={sim:0,nao:0};
+    r.correto?pmap[r.projeto].sim++:pmap[r.projeto].nao++;
   });
-  const projs = Object.keys(pmap);
-  if(charts.project) charts.project.destroy();
-  charts.project = new Chart('chart-project', {
+  const projs=Object.keys(pmap);
+  if(charts.project)charts.project.destroy();
+  charts.project=new Chart('chart-project',{
     type:'bar',
     data:{
       labels:projs,
       datasets:[
-        { label:'Conforme', data:projs.map(p=>pmap[p].sim), backgroundColor:C.sim, borderRadius:5, datalabels: dlV(null, C.white, C.sim) },
-        { label:'Inconsistente', data:projs.map(p=>pmap[p].nao), backgroundColor:C.nao, borderRadius:5, datalabels: dlV(null, C.white, C.nao) }
+        {label:'Sim',data:projs.map(p=>pmap[p].sim),backgroundColor:C.sim,datalabels:dlV(null,C.white,C.sim)},
+        {label:'Não',data:projs.map(p=>pmap[p].nao),backgroundColor:C.nao,datalabels:dlV(null,C.white,C.nao)}
       ]
     },
-    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{ stacked:false }, y:{ stacked:false } } }
+    options:{responsive:true,maintainAspectRatio:false}
   });
 }
 
-function renderAuditor() {
-  const amap = {};
-  filteredRows.forEach(r => {
-    if(!amap[r.auditor]) amap[r.auditor] = { sim:0, nao:0 };
-    r.correto ? amap[r.auditor].sim++ : amap[r.auditor].nao++;
+function renderAuditor(){
+  const amap={};
+  filteredRows.forEach(r=>{
+    if(!amap[r.auditor])amap[r.auditor]={sim:0,nao:0};
+    r.correto?amap[r.auditor].sim++:amap[r.auditor].nao++;
   });
-  const auds = Object.keys(amap);
-  if(charts.auditor) charts.auditor.destroy();
-  charts.auditor = new Chart('chart-auditor', {
+  const auds=Object.keys(amap);
+  if(charts.auditor)charts.auditor.destroy();
+  charts.auditor=new Chart('chart-auditor',{
     type:'bar',
     data:{
       labels:auds,
       datasets:[
-        { label:'Conforme', data:auds.map(a=>amap[a].sim), backgroundColor:C.sim, borderRadius:5, datalabels: dlV(null, C.white, C.sim) },
-        { label:'Inconsistente', data:auds.map(a=>amap[a].nao), backgroundColor:C.nao, borderRadius:5, datalabels: dlV(null, C.white, C.nao) }
+        {label:'Sim',data:auds.map(a=>amap[a].sim),backgroundColor:C.sim,datalabels:dlV(null,C.white,C.sim)},
+        {label:'Não',data:auds.map(a=>amap[a].nao),backgroundColor:C.nao,datalabels:dlV(null,C.white,C.nao)}
       ]
     },
-    options:{ responsive:true, maintainAspectRatio:false }
+    options:{responsive:true,maintainAspectRatio:false}
   });
 }
 
-function exportCSV() {
-  const header = ['Projeto','Data Auditoria','Chassi','Auditor','Status','Observação'];
-  const rows = filteredRows.map(r => [r.projeto, r.dataAud.toLocaleDateString(), r.chassi, r.auditor, r.correto?'Sim':'Não', r.obs]);
-  const content = [header, ...rows].map(e => e.join(",")).join("\n");
-  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = "relatorio_qa.csv";
+function exportCSV(){
+  const head=['Projeto','Data','Chassi','Auditor','Correto','Observação'];
+  const rows=filteredRows.map(r=>[r.projeto,r.dataAud.toLocaleDateString(),r.chassi,r.auditor,r.correto?'Sim':'Não',r.obs]);
+  const csv=[head,...rows].map(e=>e.join(",")).join("\n");
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="relatorio_qa.csv";
   link.click();
 }
 
